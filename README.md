@@ -60,7 +60,7 @@ Interceptor & bootstrapper designed for [zeromicro/go-zero](https://github.com/z
     - [JWT](#jwt)
     - [Secure](#secure)
     - [CSRF](#csrf)
-  - [Development Status: Stable](#development-status-stable)
+  - [Development Status: Testing](#development-status-testing)
   - [Contributing](#contributing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
