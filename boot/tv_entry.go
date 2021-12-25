@@ -297,7 +297,7 @@ func (entry *TvEntry) TV(writer http.ResponseWriter, req *http.Request) {
 	writer.Header().Set("Content-Type", "text/html;charset=UTF-8")
 
 	switch item := param["*"]; item {
-	case "", "/", "/overview", "/application":
+	case "", "/", "overview", "application":
 		buf := entry.doExecuteTemplate("overview", doReadme(writer, req), logger)
 		writer.WriteHeader(http.StatusOK)
 		writer.Write(buf.Bytes())

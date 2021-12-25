@@ -11,7 +11,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/markbates/pkger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rookie-ninja/rk-common/common"
@@ -21,7 +20,6 @@ import (
 	"github.com/rookie-ninja/rk-zero/interceptor/auth"
 	"github.com/rookie-ninja/rk-zero/interceptor/cors"
 	"github.com/rookie-ninja/rk-zero/interceptor/csrf"
-	"github.com/rookie-ninja/rk-zero/interceptor/gzip"
 	"github.com/rookie-ninja/rk-zero/interceptor/jwt"
 	"github.com/rookie-ninja/rk-zero/interceptor/log/zap"
 	"github.com/rookie-ninja/rk-zero/interceptor/meta"
@@ -36,9 +34,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"net/http"
-	"os"
 	"path"
-	"path/filepath"
 	"reflect"
 	"runtime"
 	"strconv"
@@ -110,7 +106,6 @@ type BootConfigZero struct {
 		CommonService BootConfigCommonService `yaml:"commonService" json:"commonService"`
 		TV            BootConfigTv            `yaml:"tv" json:"tv"`
 		Prom          BootConfigProm          `yaml:"prom" json:"prom"`
-		Static        BootConfigStaticHandler `yaml:"static" json:"static"`
 		Interceptors  struct {
 			LoggingZap struct {
 				Enabled                bool     `yaml:"enabled" json:"enabled"`
@@ -247,7 +242,6 @@ type ZeroEntry struct {
 	TlsConfig          *tls.Config               `json:"-" yaml:"-"`
 	Interceptors       []rest.Middleware         `json:"-" yaml:"-"`
 	PromEntry          *PromEntry                `json:"promEntry" yaml:"promEntry"`
-	StaticFileEntry    *StaticFileHandlerEntry   `json:"staticFileHandlerEntry" yaml:"staticFileHandlerEntry"`
 	TvEntry            *TvEntry                  `json:"tvEntry" yaml:"tvEntry"`
 }
 
@@ -325,13 +319,6 @@ func WithInterceptorsZero(inters ...rest.Middleware) ZeroEntryOption {
 func WithPromEntryZero(prom *PromEntry) ZeroEntryOption {
 	return func(entry *ZeroEntry) {
 		entry.PromEntry = prom
-	}
-}
-
-// WithStaticFileHandlerEntryZero provide StaticFileHandlerEntry.
-func WithStaticFileHandlerEntryZero(staticEntry *StaticFileHandlerEntry) ZeroEntryOption {
-	return func(entry *ZeroEntry) {
-		entry.StaticFileEntry = staticEntry
 	}
 }
 
@@ -649,16 +636,6 @@ func RegisterZeroEntriesWithConfig(configFilePath string) map[string]rkentry.Ent
 			inters = append(inters, rkzerocors.Interceptor(opts...))
 		}
 
-		// Did we enabled gzip interceptor?
-		if element.Interceptors.Gzip.Enabled {
-			opts := []rkzerogzip.Option{
-				rkzerogzip.WithEntryNameAndType(element.Name, ZeroEntryType),
-				rkzerogzip.WithLevel(element.Interceptors.Gzip.Level),
-			}
-
-			inters = append(inters, rkzerogzip.Interceptor(opts...))
-		}
-
 		// Did we enabled meta interceptor?
 		if element.Interceptors.Meta.Enabled {
 			opts := []rkzerometa.Option{
@@ -744,29 +721,6 @@ func RegisterZeroEntriesWithConfig(configFilePath string) map[string]rkentry.Ent
 				WithEventLoggerEntryTv(eventLoggerEntry))
 		}
 
-		// DId we enabled static file handler?
-		var staticEntry *StaticFileHandlerEntry
-		if element.Static.Enabled {
-			var fs http.FileSystem
-			switch element.Static.SourceType {
-			case "pkger":
-				fs = pkger.Dir(element.Static.SourcePath)
-			case "local":
-				if !filepath.IsAbs(element.Static.SourcePath) {
-					wd, _ := os.Getwd()
-					element.Static.SourcePath = path.Join(wd, element.Static.SourcePath)
-				}
-				fs = http.Dir(element.Static.SourcePath)
-			}
-
-			staticEntry = NewStaticFileHandlerEntry(
-				WithZapLoggerEntryStatic(zapLoggerEntry),
-				WithEventLoggerEntryStatic(eventLoggerEntry),
-				WithNameStatic(fmt.Sprintf("%s-static", element.Name)),
-				WithPathStatic(element.Static.Path),
-				WithFileSystemStatic(fs))
-		}
-
 		certEntry := rkentry.GlobalAppCtx.GetCertEntry(element.Cert.Ref)
 
 		entry := RegisterZeroEntry(
@@ -780,7 +734,6 @@ func RegisterZeroEntriesWithConfig(configFilePath string) map[string]rkentry.Ent
 			WithTVEntryZero(tvEntry),
 			WithCommonServiceEntryZero(commonServiceEntry),
 			WithSwEntryZero(swEntry),
-			WithStaticFileHandlerEntryZero(staticEntry),
 			WithInterceptorsZero(inters...))
 
 		res[name] = entry
@@ -830,6 +783,7 @@ func RegisterZeroEntry(opts ...ZeroEntryOption) *ZeroEntry {
 			// disable log
 			serverConf.Log.Mode = "console"
 			serverConf.Log.Level = "severe"
+			serverConf.Telemetry.Sampler = 0
 			entry.Server = rest.MustNewServer(serverConf, entry.ServerRunOption...)
 		}
 	}
@@ -870,49 +824,40 @@ func (entry *ZeroEntry) Bootstrap(ctx context.Context) {
 	// Is swagger enabled?
 	if entry.IsSwEnabled() {
 		// Register swagger path into Router.
+		// for sw/
 		entry.Server.AddRoute(rest.Route{
-			Method: http.MethodGet,
-			Path:   strings.TrimSuffix(entry.SwEntry.Path, "/"),
-			Handler: func(writer http.ResponseWriter, request *http.Request) {
-				writer.Header().Set("Location", entry.SwEntry.Path)
-				writer.WriteHeader(http.StatusTemporaryRedirect)
-			},
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.SwEntry.Path),
+			Handler: entry.SwEntry.ConfigFileHandler(),
 		})
+		// for sw/*
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
 			Path:    path.Join(entry.SwEntry.Path, ":*"),
 			Handler: entry.SwEntry.ConfigFileHandler(),
 		})
+
+		// for sw/css
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    "/rk/v1/assets/sw/:*",
+			Path:    "/rk/v1/assets/sw/css/:*",
+			Handler: entry.SwEntry.AssetsFileHandler(),
+		})
+		// for sw/css/3.35.1
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/rk/v1/assets/sw/css/3.35.1/:*",
+			Handler: entry.SwEntry.AssetsFileHandler(),
+		})
+		// for sw/js/3.35.1
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/rk/v1/assets/sw/js/3.35.1/:*",
 			Handler: entry.SwEntry.AssetsFileHandler(),
 		})
 
 		// Bootstrap swagger entry.
 		entry.SwEntry.Bootstrap(ctx)
-	}
-
-	// Is static file handler enabled?
-	if entry.IsStaticFileHandlerEnabled() {
-		// Register path into Router.
-		entry.Server.AddRoute(rest.Route{
-			Method: http.MethodGet,
-			Path:   strings.TrimSuffix(entry.StaticFileEntry.Path, "/"),
-			Handler: func(writer http.ResponseWriter, request *http.Request) {
-				writer.Header().Set("Location", entry.StaticFileEntry.Path)
-				writer.WriteHeader(http.StatusTemporaryRedirect)
-			},
-		})
-		// Register path into Router.
-		entry.Server.AddRoute(rest.Route{
-			Method:  http.MethodGet,
-			Path:    path.Join(entry.StaticFileEntry.Path, ":*"),
-			Handler: entry.StaticFileEntry.GetFileHandler(),
-		})
-
-		// Bootstrap entry.
-		entry.StaticFileEntry.Bootstrap(ctx)
 	}
 
 	// Is prometheus enabled?
@@ -1005,18 +950,45 @@ func (entry *ZeroEntry) Bootstrap(ctx context.Context) {
 			Method: http.MethodGet,
 			Path:   "/rk/v1/tv",
 			Handler: func(writer http.ResponseWriter, request *http.Request) {
-				writer.Header().Set("Location", "/rk/v1/tv")
+				writer.Header().Set("Location", "/rk/v1/tv/overview")
 				writer.WriteHeader(http.StatusTemporaryRedirect)
 			},
 		})
+		// for index
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
 			Path:    "/rk/v1/tv/:*",
 			Handler: entry.TvEntry.TV,
 		})
+
+		// for css/fonts
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    "/rk/v1/assets/tv/:*",
+			Path:    "/rk/v1/assets/tv/css/fonts/:*",
+			Handler: entry.TvEntry.AssetsFileHandler(),
+		})
+		// for css
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/rk/v1/assets/tv/css/:*",
+			Handler: entry.TvEntry.AssetsFileHandler(),
+		})
+		// for image
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/rk/v1/assets/tv/image/:*",
+			Handler: entry.TvEntry.AssetsFileHandler(),
+		})
+		// for js
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/rk/v1/assets/tv/js/:*",
+			Handler: entry.TvEntry.AssetsFileHandler(),
+		})
+		// for webfonts
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    "/rk/v1/assets/tv/webfonts/:*",
 			Handler: entry.TvEntry.AssetsFileHandler(),
 		})
 
@@ -1055,11 +1027,6 @@ func (entry *ZeroEntry) Interrupt(ctx context.Context) {
 	if entry.IsSwEnabled() {
 		// Interrupt swagger entry
 		entry.SwEntry.Interrupt(ctx)
-	}
-
-	if entry.IsStaticFileHandlerEnabled() {
-		// Interrupt entry
-		entry.StaticFileEntry.Interrupt(ctx)
 	}
 
 	if entry.IsPromEnabled() {
@@ -1170,11 +1137,6 @@ func (entry *ZeroEntry) IsTvEnabled() bool {
 // IsPromEnabled Is prometheus entry enabled?
 func (entry *ZeroEntry) IsPromEnabled() bool {
 	return entry.PromEntry != nil
-}
-
-// IsStaticFileHandlerEnabled Is static file handler entry enabled?
-func (entry *ZeroEntry) IsStaticFileHandlerEnabled() bool {
-	return entry.StaticFileEntry != nil
 }
 
 // Add basic fields into event.

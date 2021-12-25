@@ -19,7 +19,7 @@ import (
 	"runtime/debug"
 )
 
-// Interceptor returns a echo.MiddlewareFunc (middleware)
+// Interceptor returns a rest.Middleware (middleware)
 func Interceptor(opts ...Option) rest.Middleware {
 	set := newOptionSet(opts...)
 

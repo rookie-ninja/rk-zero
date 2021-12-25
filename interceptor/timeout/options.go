@@ -153,7 +153,8 @@ func (set *optionSet) Tick(req *http.Request, writer http.ResponseWriter, next h
 		rk.response(writer, req)
 
 		httpx.WriteJson(writer, http.StatusRequestTimeout, rkerror.New(
-			rkerror.WithHttpCode(http.StatusRequestTimeout)))
+			rkerror.WithHttpCode(http.StatusRequestTimeout),
+			rkerror.WithMessage("Request timed out!")))
 
 		// switch back to new writer since user code may still want to write to it.
 		// Panic may occur if we ignore this step.

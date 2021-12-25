@@ -69,6 +69,7 @@ func Interceptor(opts ...Option) rest.Middleware {
 					httpx.WriteJson(writer, http.StatusForbidden, rkerror.New(
 						rkerror.WithHttpCode(http.StatusForbidden),
 						rkerror.WithMessage("invalid csrf token")))
+					return
 				}
 			}
 

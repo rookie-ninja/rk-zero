@@ -8,7 +8,6 @@ require (
 	github.com/markbates/pkger v0.17.1
 	github.com/prometheus/client_golang v1.11.0
 	github.com/rookie-ninja/rk-common v1.2.3
-	github.com/rookie-ninja/rk-echo v0.0.5
 	github.com/rookie-ninja/rk-entry v1.0.4
 	github.com/rookie-ninja/rk-logger v1.2.3
 	github.com/rookie-ninja/rk-prom v1.1.4
@@ -19,7 +18,7 @@ require (
 	github.com/tal-tech/go-zero v1.2.4
 	go.opentelemetry.io/contrib v1.3.0
 	go.opentelemetry.io/otel v1.3.0
-	go.opentelemetry.io/otel/exporters/jaeger v1.2.0
+	go.opentelemetry.io/otel/exporters/jaeger v1.3.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.3.0
 	go.opentelemetry.io/otel/sdk v1.3.0
 	go.opentelemetry.io/otel/trace v1.3.0

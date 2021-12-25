@@ -5,249 +5,208 @@
 
 package rkzeroctx
 
-//import (
-//	"context"
-//	"github.com/labstack/echo/v4"
-//	"github.com/rookie-ninja/rk-echo/interceptor"
-//	"github.com/rookie-ninja/rk-logger"
-//	"github.com/rookie-ninja/rk-query"
-//	"github.com/stretchr/testify/assert"
-//	"go.opentelemetry.io/otel/propagation"
-//	"go.opentelemetry.io/otel/trace"
-//	"net/http"
-//	"net/http/httptest"
-//	"testing"
-//)
-//
-//func newCtx() echo.Context {
-//	return echo.New().NewContext(
-//		httptest.NewRequest(http.MethodGet, "/ut-path", nil),
-//		httptest.NewRecorder())
-//}
-//
-//func TestGetIncomingHeaders(t *testing.T) {
-//	ctx := newCtx()
-//	ctx.Request().Header.Set("ut-key", "ut-value")
-//
-//	assert.Len(t, GetIncomingHeaders(ctx), 1)
-//	assert.Equal(t, "ut-value", GetIncomingHeaders(ctx).Get("ut-key"))
-//}
-//
-//func TestAddHeaderToClient(t *testing.T) {
-//	defer assertNotPanic(t)
-//
-//	ctx := newCtx()
-//
-//	// With nil context
-//	AddHeaderToClient(nil, "", "")
-//
-//	// With nil writer
-//	AddHeaderToClient(ctx, "", "")
-//
-//	// Happy case
-//	AddHeaderToClient(ctx, "ut-key", "ut-value")
-//	assert.Equal(t, "ut-value", ctx.Response().Header().Get("ut-key"))
-//}
-//
-//func TestSetHeaderToClient(t *testing.T) {
-//	defer assertNotPanic(t)
-//
-//	ctx := newCtx()
-//
-//	// With nil context
-//	SetHeaderToClient(nil, "", "")
-//
-//	// With nil writer
-//	SetHeaderToClient(ctx, "", "")
-//
-//	// Happy case
-//	SetHeaderToClient(ctx, "ut-key", "ut-value")
-//	assert.Equal(t, "ut-value", ctx.Response().Header().Get("ut-key"))
-//}
-//
-//func TestGetEvent(t *testing.T) {
-//	// With nil context
-//	assert.Equal(t, noopEvent, GetEvent(nil))
-//
-//	// With no event in context
-//	ctx := newCtx()
-//	assert.Equal(t, noopEvent, GetEvent(ctx))
-//
-//	// Happy case
-//	event := rkquery.NewEventFactory().CreateEventNoop()
-//	ctx.Set(rkechointer.RpcEventKey, event)
-//	assert.Equal(t, event, GetEvent(ctx))
-//}
-//
-//func TestGetLogger(t *testing.T) {
-//	// With nil context
-//	assert.Equal(t, rklogger.NoopLogger, GetLogger(nil))
-//
-//	ctx := newCtx()
-//
-//	// With no logger in context
-//	assert.Equal(t, rklogger.NoopLogger, GetLogger(ctx))
-//
-//	// Happy case
-//	// Add request id and trace id
-//	ctx.Response().Writer.Header().Set(RequestIdKey, "ut-request-id")
-//	ctx.Response().Writer.Header().Set(TraceIdKey, "ut-trace-id")
-//	ctx.Set(rkechointer.RpcLoggerKey, rklogger.NoopLogger)
-//
-//	assert.Equal(t, rklogger.NoopLogger, GetLogger(ctx))
-//}
-//
-//func TestGetRequestId(t *testing.T) {
-//	// With nil context
-//	assert.Empty(t, GetRequestId(nil))
-//
-//	ctx := newCtx()
-//
-//	// With no requestId in context
-//	assert.Empty(t, GetRequestId(ctx))
-//
-//	// Happy case
-//	ctx.Response().Writer.Header().Set(RequestIdKey, "ut-request-id")
-//	assert.Equal(t, "ut-request-id", GetRequestId(ctx))
-//}
-//
-//func TestGetTraceId(t *testing.T) {
-//	// With nil context
-//	assert.Empty(t, GetTraceId(nil))
-//
-//	ctx := newCtx()
-//
-//	// With no traceId in context
-//	assert.Empty(t, GetTraceId(ctx))
-//
-//	// Happy case
-//	ctx.Response().Writer.Header().Set(TraceIdKey, "ut-trace-id")
-//	assert.Equal(t, "ut-trace-id", GetTraceId(ctx))
-//}
-//
-//func TestGetEntryName(t *testing.T) {
-//	// With nil context
-//	assert.Empty(t, GetEntryName(nil))
-//
-//	ctx := newCtx()
-//
-//	// With no entry name in context
-//	assert.Empty(t, GetEntryName(ctx))
-//
-//	// Happy case
-//	ctx.Set(rkechointer.RpcEntryNameKey, "ut-entry-name")
-//	assert.Equal(t, "ut-entry-name", GetEntryName(ctx))
-//}
-//
-//func TestGetTraceSpan(t *testing.T) {
-//	ctx := newCtx()
-//	ctx.SetRequest(ctx.Request().WithContext(context.TODO()))
-//
-//	// With nil context
-//	assert.NotNil(t, GetTraceSpan(nil))
-//
-//	// With no span in context
-//	assert.NotNil(t, GetTraceSpan(ctx))
-//
-//	// Happy case
-//	_, span := noopTracerProvider.Tracer("ut-trace").Start(ctx.Request().Context(), "noop-span")
-//	ctx.Set(rkechointer.RpcSpanKey, span)
-//	assert.Equal(t, span, GetTraceSpan(ctx))
-//}
-//
-//func TestGetTracer(t *testing.T) {
-//	ctx := newCtx()
-//	ctx.SetRequest(ctx.Request().WithContext(context.TODO()))
-//
-//	// With nil context
-//	assert.NotNil(t, GetTracer(nil))
-//
-//	// With no tracer in context
-//	assert.NotNil(t, GetTracer(ctx))
-//
-//	// Happy case
-//	tracer := noopTracerProvider.Tracer("ut-trace")
-//	ctx.Set(rkechointer.RpcTracerKey, tracer)
-//	assert.Equal(t, tracer, GetTracer(ctx))
-//}
-//
-//func TestGetTracerProvider(t *testing.T) {
-//	ctx := newCtx()
-//	ctx.SetRequest(ctx.Request().WithContext(context.TODO()))
-//
-//	// With nil context
-//	assert.NotNil(t, GetTracerProvider(nil))
-//
-//	// With no tracer provider in context
-//	assert.NotNil(t, GetTracerProvider(ctx))
-//
-//	// Happy case
-//	provider := trace.NewNoopTracerProvider()
-//	ctx.Set(rkechointer.RpcTracerProviderKey, provider)
-//	assert.Equal(t, provider, GetTracerProvider(ctx))
-//}
-//
-//func TestGetTracerPropagator(t *testing.T) {
-//	ctx := newCtx()
-//	ctx.SetRequest(ctx.Request().WithContext(context.TODO()))
-//
-//	// With nil context
-//	assert.Nil(t, GetTracerPropagator(nil))
-//
-//	// With no tracer propagator in context
-//	assert.Nil(t, GetTracerPropagator(ctx))
-//
-//	// Happy case
-//	prop := propagation.NewCompositeTextMapPropagator()
-//	ctx.Set(rkechointer.RpcPropagatorKey, prop)
-//	assert.Equal(t, prop, GetTracerPropagator(ctx))
-//}
-//
-//func TestInjectSpanToHttpRequest(t *testing.T) {
-//	defer assertNotPanic(t)
-//
-//	// With nil context and request
-//	InjectSpanToHttpRequest(nil, nil)
-//
-//	// Happy case
-//	ctx := newCtx()
-//	ctx.SetRequest(ctx.Request().WithContext(context.TODO()))
-//
-//	prop := propagation.NewCompositeTextMapPropagator()
-//	ctx.Set(rkechointer.RpcPropagatorKey, prop)
-//	InjectSpanToHttpRequest(ctx, &http.Request{
-//		Header: http.Header{},
-//	})
-//}
-//
-//func TestNewTraceSpan(t *testing.T) {
-//	ctx := newCtx()
-//	ctx.SetRequest(ctx.Request().WithContext(context.TODO()))
-//
-//	assert.NotNil(t, NewTraceSpan(ctx, "ut-span"))
-//}
-//
-//func TestEndTraceSpan(t *testing.T) {
-//	defer assertNotPanic(t)
-//
-//	ctx := newCtx()
-//	ctx.SetRequest(ctx.Request().WithContext(context.TODO()))
-//
-//	// With success
-//	span := GetTraceSpan(ctx)
-//	EndTraceSpan(ctx, span, true)
-//
-//	// With failure
-//	span = GetTraceSpan(ctx)
-//	EndTraceSpan(ctx, span, false)
-//}
-//
-//func assertNotPanic(t *testing.T) {
-//	if r := recover(); r != nil {
-//		// Expect panic to be called with non nil error
-//		assert.True(t, false)
-//	} else {
-//		// This should never be called in case of a bug
-//		assert.True(t, true)
-//	}
-//}
+import (
+	"context"
+	"github.com/rookie-ninja/rk-logger"
+	"github.com/rookie-ninja/rk-query"
+	"github.com/rookie-ninja/rk-zero/interceptor"
+	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
+
+func newReqAndWriter() (*http.Request, *httptest.ResponseRecorder) {
+	req := httptest.NewRequest(http.MethodGet, "/ut-path", nil)
+	writer := httptest.NewRecorder()
+	return req, writer
+}
+
+func TestGetIncomingHeaders(t *testing.T) {
+	req, _ := newReqAndWriter()
+	req.Header.Set("ut-key", "ut-value")
+
+	assert.Len(t, GetIncomingHeaders(req), 1)
+	assert.Equal(t, "ut-value", GetIncomingHeaders(req).Get("ut-key"))
+}
+
+func TestAddHeaderToClient(t *testing.T) {
+	defer assertNotPanic(t)
+
+	_, writer := newReqAndWriter()
+
+	// With nil writer
+	AddHeaderToClient(writer, "", "")
+
+	// Happy case
+	AddHeaderToClient(writer, "ut-key", "ut-value")
+	assert.Equal(t, "ut-value", writer.Header().Get("ut-key"))
+}
+
+func TestSetHeaderToClient(t *testing.T) {
+	defer assertNotPanic(t)
+
+	_, writer := newReqAndWriter()
+
+	// With nil writer
+	SetHeaderToClient(writer, "", "")
+
+	// Happy case
+	SetHeaderToClient(writer, "ut-key", "ut-value")
+	assert.Equal(t, "ut-value", writer.Header().Get("ut-key"))
+}
+
+func TestGetEvent(t *testing.T) {
+	// With no event in context
+	req, _ := newReqAndWriter()
+	assert.Equal(t, noopEvent, GetEvent(req))
+
+	// Happy case
+	event := rkquery.NewEventFactory().CreateEventNoop()
+	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcEventKey, event))
+	assert.Equal(t, event, GetEvent(req))
+}
+
+func TestGetLogger(t *testing.T) {
+	req, writer := newReqAndWriter()
+
+	// With no logger in context
+	assert.Equal(t, rklogger.NoopLogger, GetLogger(req, writer))
+
+	// Happy case
+	// Add request id and trace id
+	writer.Header().Set(RequestIdKey, "ut-request-id")
+	writer.Header().Set(TraceIdKey, "ut-trace-id")
+
+	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcLoggerKey, rklogger.NoopLogger))
+
+	assert.Equal(t, rklogger.NoopLogger, GetLogger(req, writer))
+}
+
+func TestGetRequestId(t *testing.T) {
+	_, writer := newReqAndWriter()
+
+	// With no requestId in context
+	assert.Empty(t, GetRequestId(writer))
+
+	// Happy case
+	writer.Header().Set(RequestIdKey, "ut-request-id")
+	assert.Equal(t, "ut-request-id", GetRequestId(writer))
+}
+
+func TestGetTraceId(t *testing.T) {
+	_, writer := newReqAndWriter()
+
+	// With no traceId in context
+	assert.Empty(t, GetTraceId(writer))
+
+	// Happy case
+	writer.Header().Set(TraceIdKey, "ut-trace-id")
+	assert.Equal(t, "ut-trace-id", GetTraceId(writer))
+}
+
+func TestGetEntryName(t *testing.T) {
+	req, _ := newReqAndWriter()
+
+	// With no entry name in context
+	assert.Empty(t, GetEntryName(req))
+
+	// Happy case
+	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcEntryNameKey, "ut-entry-name"))
+	assert.Equal(t, "ut-entry-name", GetEntryName(req))
+}
+
+func TestGetTraceSpan(t *testing.T) {
+	req, _ := newReqAndWriter()
+
+	// With no span in context
+	assert.NotNil(t, GetTraceSpan(req))
+
+	// Happy case
+	_, span := noopTracerProvider.Tracer("ut-trace").Start(req.Context(), "noop-span")
+	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcSpanKey, span))
+	assert.Equal(t, span, GetTraceSpan(req))
+}
+
+func TestGetTracer(t *testing.T) {
+	req, _ := newReqAndWriter()
+
+	// With no tracer in context
+	assert.NotNil(t, GetTracer(req))
+
+	// Happy case
+	tracer := noopTracerProvider.Tracer("ut-trace")
+	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcTracerKey, tracer))
+	assert.Equal(t, tracer, GetTracer(req))
+}
+
+func TestGetTracerProvider(t *testing.T) {
+	req, _ := newReqAndWriter()
+
+	// With no tracer provider in context
+	assert.NotNil(t, GetTracerProvider(req))
+
+	// Happy case
+	provider := trace.NewNoopTracerProvider()
+	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcTracerProviderKey, provider))
+	assert.Equal(t, provider, GetTracerProvider(req))
+}
+
+func TestGetTracerPropagator(t *testing.T) {
+	req, _ := newReqAndWriter()
+
+	// With no tracer propagator in context
+	assert.Nil(t, GetTracerPropagator(req))
+
+	// Happy case
+	prop := propagation.NewCompositeTextMapPropagator()
+	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcPropagatorKey, prop))
+	assert.Equal(t, prop, GetTracerPropagator(req))
+}
+
+func TestInjectSpanToHttpRequest(t *testing.T) {
+	defer assertNotPanic(t)
+
+	// Happy case
+	req, _ := newReqAndWriter()
+
+	prop := propagation.NewCompositeTextMapPropagator()
+	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcPropagatorKey, prop))
+
+	InjectSpanToHttpRequest(req, &http.Request{
+		Header: http.Header{},
+	})
+}
+
+func TestNewTraceSpan(t *testing.T) {
+	req, _ := newReqAndWriter()
+
+	_, span := NewTraceSpan(req, "ut-span")
+	assert.NotNil(t, span)
+}
+
+func TestEndTraceSpan(t *testing.T) {
+	defer assertNotPanic(t)
+
+	req, _ := newReqAndWriter()
+
+	// With success
+	span := GetTraceSpan(req)
+	EndTraceSpan(span, true)
+
+	// With failure
+	span = GetTraceSpan(req)
+	EndTraceSpan(span, false)
+}
+
+func assertNotPanic(t *testing.T) {
+	if r := recover(); r != nil {
+		// Expect panic to be called with non nil error
+		assert.True(t, false)
+	} else {
+		// This should never be called in case of a bug
+		assert.True(t, true)
+	}
+}

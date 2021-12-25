@@ -8,11 +8,9 @@ package rkzerotrace
 
 import (
 	"context"
-	"github.com/rookie-ninja/rk-echo/interceptor"
-	"github.com/rookie-ninja/rk-echo/interceptor/context"
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/rookie-ninja/rk-zero/interceptor"
-	rkzeroctx "github.com/rookie-ninja/rk-zero/interceptor/context"
+	"github.com/rookie-ninja/rk-zero/interceptor/context"
 	"github.com/tal-tech/go-zero/rest"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
@@ -70,9 +68,9 @@ func before(req *http.Request, writer http.ResponseWriter, set *optionSet) (otel
 	// 2.1: pass the span through the request context
 	req = req.WithContext(newRequestCtx)
 
-	// 3: read trace id, tracer, traceProvider, propagator and logger into event data and echo context
+	// 3: read trace id, tracer, traceProvider, propagator and logger into event data and request context
 	rkzeroctx.GetEvent(req).SetTraceId(span.SpanContext().TraceID().String())
-	writer.Header().Set(rkechoctx.TraceIdKey, span.SpanContext().TraceID().String())
+	writer.Header().Set(rkzeroctx.TraceIdKey, span.SpanContext().TraceID().String())
 
 	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcSpanKey, span))
 	return span, req
@@ -88,10 +86,10 @@ func after(writer *rkzerointer.RkResponseWriter, span oteltrace.Span) {
 // Convert locale information into attributes.
 func localeToAttributes() []attribute.KeyValue {
 	res := []attribute.KeyValue{
-		attribute.String(rkechointer.Realm.Key, rkechointer.Realm.String),
-		attribute.String(rkechointer.Region.Key, rkechointer.Region.String),
-		attribute.String(rkechointer.AZ.Key, rkechointer.AZ.String),
-		attribute.String(rkechointer.Domain.Key, rkechointer.Domain.String),
+		attribute.String(rkzerointer.Realm.Key, rkzerointer.Realm.String),
+		attribute.String(rkzerointer.Region.Key, rkzerointer.Region.String),
+		attribute.String(rkzerointer.AZ.Key, rkzerointer.AZ.String),
+		attribute.String(rkzerointer.Domain.Key, rkzerointer.Domain.String),
 	}
 
 	return res

@@ -35,7 +35,7 @@ func Interceptor(opts ...Option) rest.Middleware {
 
 				httpx.WriteJson(writer, http.StatusTooManyRequests, rkerror.New(
 					rkerror.WithHttpCode(http.StatusTooManyRequests),
-					rkerror.WithDetails(err)))
+					rkerror.WithMessage(err.Error())))
 				return
 			}
 

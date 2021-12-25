@@ -140,7 +140,7 @@ func getValues(req *http.Request, writer http.ResponseWriter) []string {
 		rkentry.GlobalAppCtx.GetAppInfoEntry().AppName,
 		method,
 		path,
-		"echo",
+		"zero",
 		resCode,
 	}
 
