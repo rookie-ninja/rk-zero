@@ -4,6 +4,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/rookie-ninja/rk-zero)](https://goreportcard.com/report/github.com/rookie-ninja/rk-zero)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+> In testing stage!
+
 Interceptor & bootstrapper designed for [zeromicro/go-zero](https://github.com/zeromicro/go-zero) framework. Currently, supports bellow functionalities.
 
 | Name | Description |
