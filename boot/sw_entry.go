@@ -69,12 +69,12 @@ type BootConfigSw struct {
 type SwEntry struct {
 	EntryName           string                    `json:"entryName" yaml:"entryName"`
 	EntryType           string                    `json:"entryType" yaml:"entryType"`
-	EntryDescription    string                    `json:"entryDescription" yaml:"entryDescription"`
-	EventLoggerEntry    *rkentry.EventLoggerEntry `json:"eventLoggerEntry" yaml:"eventLoggerEntry"`
-	ZapLoggerEntry      *rkentry.ZapLoggerEntry   `json:"zapLoggerEntry" yaml:"zapLoggerEntry"`
+	EntryDescription    string                    `json:"-" yaml:"-"`
+	EventLoggerEntry    *rkentry.EventLoggerEntry `json:"-" yaml:"-"`
+	ZapLoggerEntry      *rkentry.ZapLoggerEntry   `json:"-" yaml:"-"`
 	JsonPath            string                    `json:"jsonPath" yaml:"jsonPath"`
 	Path                string                    `json:"path" yaml:"path"`
-	Headers             map[string]string         `json:"headers" yaml:"headers"`
+	Headers             map[string]string         `json:"-" yaml:"-"`
 	Port                uint64                    `json:"port" yaml:"port"`
 	EnableCommonService bool                      `json:"enableCommonService" yaml:"enableCommonService"`
 }
@@ -178,46 +178,12 @@ func NewSwEntry(opts ...SwOption) *SwEntry {
 
 // Bootstrap swagger entry.
 func (entry *SwEntry) Bootstrap(ctx context.Context) {
-	// No op
-	event := entry.EventLoggerEntry.GetEventHelper().Start(
-		"bootstrap",
-		rkquery.WithEntryName(entry.EntryName),
-		rkquery.WithEntryType(entry.EntryType))
-
-	logger := entry.ZapLoggerEntry.GetLogger()
-
-	if raw := ctx.Value(bootstrapEventIdKey); raw != nil {
-		event.SetEventId(raw.(string))
-		logger = logger.With(zap.String("eventId", event.GetEventId()))
-	}
-
-	entry.logBasicInfo(event)
-
-	defer entry.EventLoggerEntry.GetEventHelper().Finish(event)
-
-	logger.Info("Bootstrapping SwEntry.", event.ListPayloads()...)
+	// Noop
 }
 
 // Interrupt swagger entry.
 func (entry *SwEntry) Interrupt(ctx context.Context) {
-	// No op
-	event := entry.EventLoggerEntry.GetEventHelper().Start(
-		"interrupt",
-		rkquery.WithEntryName(entry.EntryName),
-		rkquery.WithEntryType(entry.EntryType))
-
-	logger := entry.ZapLoggerEntry.GetLogger()
-
-	if raw := ctx.Value(bootstrapEventIdKey); raw != nil {
-		event.SetEventId(raw.(string))
-		logger = logger.With(zap.String("eventId", event.GetEventId()))
-	}
-
-	entry.logBasicInfo(event)
-
-	defer entry.EventLoggerEntry.GetEventHelper().Finish(event)
-
-	logger.Info("Interrupting SwEntry.", event.ListPayloads()...)
+	// Noop
 }
 
 // GetName Get name of entry.

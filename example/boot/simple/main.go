@@ -8,6 +8,8 @@ import (
 	"context"
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/rookie-ninja/rk-zero/boot"
+	"github.com/tal-tech/go-zero/rest"
+	"net/http"
 )
 
 func main() {
@@ -17,12 +19,24 @@ func main() {
 	// Bootstrap zero entry from boot config
 	res := rkzero.RegisterZeroEntriesWithConfig("example/boot/simple/boot.yaml")
 
+	// Get ZeroEntry
+	zeroEntry := res["greeter"].(*rkzero.ZeroEntry)
+	// Add router
+	zeroEntry.Server.AddRoute(rest.Route{
+		Method: http.MethodGet,
+		Path:   "/v1/greeter",
+		Handler: func(writer http.ResponseWriter, request *http.Request) {
+			writer.WriteHeader(http.StatusOK)
+			writer.Write([]byte("Hello!"))
+		},
+	})
+
 	// Bootstrap zero entry
-	res["greeter"].Bootstrap(context.Background())
+	zeroEntry.Bootstrap(context.Background())
 
 	// Wait for shutdown signal
 	rkentry.GlobalAppCtx.WaitForShutdownSig()
 
 	// Interrupt zero entry
-	res["greeter"].Interrupt(context.Background())
+	zeroEntry.Interrupt(context.Background())
 }

@@ -8,7 +8,7 @@ package rkzero
 import (
 	"bytes"
 	"context"
-	rkcommon "github.com/rookie-ninja/rk-common/common"
+	"github.com/rookie-ninja/rk-common/common"
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"

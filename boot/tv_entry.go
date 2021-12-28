@@ -9,12 +9,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/markbates/pkger"
 	"github.com/markbates/pkger/pkging"
 	"github.com/rookie-ninja/rk-common/common"
 	"github.com/rookie-ninja/rk-entry/entry"
-	"github.com/rookie-ninja/rk-query"
 	rkzeroctx "github.com/rookie-ninja/rk-zero/interceptor/context"
 	"github.com/tal-tech/go-zero/rest/pathvar"
 	"go.uber.org/zap"
@@ -97,9 +95,9 @@ type BootConfigTv struct {
 type TvEntry struct {
 	EntryName        string                    `json:"entryName" yaml:"entryName"`
 	EntryType        string                    `json:"entryType" yaml:"entryType"`
-	EntryDescription string                    `json:"entryDescription" yaml:"entryDescription"`
-	ZapLoggerEntry   *rkentry.ZapLoggerEntry   `json:"zapLoggerEntry" yaml:"zapLoggerEntry"`
-	EventLoggerEntry *rkentry.EventLoggerEntry `json:"eventLoggerEntry" yaml:"eventLoggerEntry"`
+	EntryDescription string                    `json:"-" yaml:"-"`
+	ZapLoggerEntry   *rkentry.ZapLoggerEntry   `json:"-" yaml:"-"`
+	EventLoggerEntry *rkentry.EventLoggerEntry `json:"-" yaml:"-"`
 	Template         *template.Template        `json:"-" yaml:"-"`
 }
 
@@ -181,56 +179,19 @@ func (entry *TvEntry) AssetsFileHandler() http.HandlerFunc {
 // 16: license.tmpl
 // 17: info.tmpl
 func (entry *TvEntry) Bootstrap(ctx context.Context) {
-	event := entry.EventLoggerEntry.GetEventHelper().Start(
-		"bootstrap",
-		rkquery.WithEntryName(entry.EntryName),
-		rkquery.WithEntryType(entry.EntryType))
-
-	logger := entry.ZapLoggerEntry.GetLogger()
-
-	if raw := ctx.Value(bootstrapEventIdKey); raw != nil {
-		event.SetEventId(raw.(string))
-		logger = logger.With(zap.String("eventId", event.GetEventId()))
-	}
-
-	entry.logBasicInfo(event)
-
-	event.AddPayloads(zap.String("path", "/rk/v1/tv/*item"))
-
 	entry.Template = template.New("rk-tv")
 
 	// Parse templates
-	for k, v := range Templates {
+	for _, v := range Templates {
 		if _, err := entry.Template.Parse(string(v)); err != nil {
-			entry.EventLoggerEntry.GetEventHelper().FinishWithError(event, err)
-			entry.ZapLoggerEntry.GetLogger().Error(fmt.Sprintf("Error occurs while parsing %s template.", k))
 			rkcommon.ShutdownWithError(err)
 		}
 	}
-
-	logger.Info("Bootstrapping tvEntry.", event.ListPayloads()...)
-
-	entry.EventLoggerEntry.GetEventHelper().Finish(event)
 }
 
 // Interrupt TV entry.
 func (entry *TvEntry) Interrupt(ctx context.Context) {
-	event := entry.EventLoggerEntry.GetEventHelper().Start(
-		"interrupt",
-		rkquery.WithEntryName(entry.EntryName),
-		rkquery.WithEntryType(entry.EntryType))
-
-	logger := entry.ZapLoggerEntry.GetLogger()
-	if raw := ctx.Value(bootstrapEventIdKey); raw != nil {
-		event.SetEventId(raw.(string))
-		logger = logger.With(zap.String("eventId", event.GetEventId()))
-	}
-
-	entry.logBasicInfo(event)
-
-	defer entry.EventLoggerEntry.GetEventHelper().Finish(event)
-
-	logger.Info("Interrupting TvEntry.", event.ListPayloads()...)
+	// Noop
 }
 
 // GetName Get name of entry.
@@ -270,14 +231,6 @@ func (entry *TvEntry) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON Not supported.
 func (entry *TvEntry) UnmarshalJSON([]byte) error {
 	return nil
-}
-
-// Add basic fields into event.
-func (entry *TvEntry) logBasicInfo(event rkquery.Event) {
-	event.AddPayloads(
-		zap.String("entryName", entry.EntryName),
-		zap.String("entryType", entry.EntryType),
-	)
 }
 
 // TV handler
