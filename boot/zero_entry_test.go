@@ -136,7 +136,7 @@ func TestRegisterZeroEntry(t *testing.T) {
 		WithCommonServiceEntry(rkentry.RegisterCommonServiceEntry()),
 		WithTvEntry(rkentry.RegisterTvEntry()),
 		WithSwEntry(rkentry.RegisterSwEntry()),
-		WithPort(8080),
+		WithPort(8083),
 		WithName("ut-entry"),
 		WithDescription("ut-desc"),
 		WithPromEntry(rkentry.RegisterPromEntry()),
@@ -183,14 +183,14 @@ func TestEchoEntry_Bootstrap(t *testing.T) {
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 
 	entry = RegisterZeroEntry(
-		WithPort(8080),
+		WithPort(8081),
 		WithCommonServiceEntry(rkentry.RegisterCommonServiceEntry()),
 		WithTvEntry(rkentry.RegisterTvEntry()),
 		WithSwEntry(rkentry.RegisterSwEntry()),
 		WithPromEntry(rkentry.RegisterPromEntry()))
 	go entry.Bootstrap(context.Background())
 	time.Sleep(time.Second)
-	validateServerIsUp(t, 8080, entry.IsTlsEnabled())
+	validateServerIsUp(t, 8081, entry.IsTlsEnabled())
 	entry.Interrupt(context.TODO())
 	// force to kill it because go-zero do not stop server with stop() call
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
