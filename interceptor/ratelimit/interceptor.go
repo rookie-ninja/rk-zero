@@ -8,34 +8,31 @@ package rkzerolimit
 
 import (
 	"context"
-	"github.com/rookie-ninja/rk-common/error"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
+	rkmidlimit "github.com/rookie-ninja/rk-entry/middleware/ratelimit"
 	"github.com/rookie-ninja/rk-zero/interceptor"
-	"github.com/rookie-ninja/rk-zero/interceptor/context"
 	"github.com/tal-tech/go-zero/rest"
 	"github.com/tal-tech/go-zero/rest/httpx"
 	"net/http"
 )
 
 // Interceptor Add rate limit interceptors.
-func Interceptor(opts ...Option) rest.Middleware {
-	set := newOptionSet(opts...)
+func Interceptor(opts ...rkmidlimit.Option) rest.Middleware {
+	set := rkmidlimit.NewOptionSet(opts...)
 
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(writer http.ResponseWriter, req *http.Request) {
 			// wrap writer
 			writer = rkzerointer.WrapResponseWriter(writer)
 
-			req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcEntryNameKey, set.EntryName))
+			ctx := context.WithValue(req.Context(), rkmid.EntryNameKey, set.GetEntryName())
+			req = req.WithContext(ctx)
 
-			event := rkzeroctx.GetEvent(req)
+			beforeCtx := set.BeforeCtx(req)
+			set.Before(beforeCtx)
 
-			if duration, err := set.Wait(req); err != nil {
-				event.SetCounter("rateLimitWaitMs", duration.Milliseconds())
-				event.AddErr(err)
-
-				httpx.WriteJson(writer, http.StatusTooManyRequests, rkerror.New(
-					rkerror.WithHttpCode(http.StatusTooManyRequests),
-					rkerror.WithMessage(err.Error())))
+			if beforeCtx.Output.ErrResp != nil {
+				httpx.WriteJson(writer, beforeCtx.Output.ErrResp.Err.Code, beforeCtx.Output.ErrResp)
 				return
 			}
 

@@ -9,21 +9,14 @@ package rkzeroctx
 import (
 	"context"
 	"github.com/golang-jwt/jwt/v4"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-logger"
 	"github.com/rookie-ninja/rk-query"
-	"github.com/rookie-ninja/rk-zero/interceptor"
 	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
-)
-
-const (
-	// RequestIdKey is the header key sent to client
-	RequestIdKey = "X-Request-Id"
-	// TraceIdKey is the header sent to client
-	TraceIdKey = "X-Trace-Id"
 )
 
 var (
@@ -63,7 +56,7 @@ func GetEvent(req *http.Request) rkquery.Event {
 		return noopEvent
 	}
 
-	if raw := req.Context().Value(rkzerointer.RpcEventKey); raw != nil {
+	if raw := req.Context().Value(rkmid.EventKey); raw != nil {
 		return raw.(rkquery.Event)
 	}
 
@@ -76,7 +69,7 @@ func GetLogger(req *http.Request, w http.ResponseWriter) *zap.Logger {
 		return rklogger.NoopLogger
 	}
 
-	if raw := req.Context().Value(rkzerointer.RpcLoggerKey); raw != nil {
+	if raw := req.Context().Value(rkmid.LoggerKey); raw != nil {
 		requestId := GetRequestId(w)
 		traceId := GetTraceId(w)
 		fields := make([]zap.Field, 0)
@@ -101,7 +94,7 @@ func GetRequestId(w http.ResponseWriter) string {
 		return ""
 	}
 
-	return w.Header().Get(RequestIdKey)
+	return w.Header().Get(rkmid.HeaderRequestId)
 }
 
 // GetTraceId extract trace id from context.
@@ -110,7 +103,7 @@ func GetTraceId(w http.ResponseWriter) string {
 		return ""
 	}
 
-	return w.Header().Get(TraceIdKey)
+	return w.Header().Get(rkmid.HeaderTraceId)
 }
 
 // GetEntryName extract entry name from context.
@@ -119,7 +112,7 @@ func GetEntryName(req *http.Request) string {
 		return ""
 	}
 
-	if raw := req.Context().Value(rkzerointer.RpcEntryNameKey); raw != nil {
+	if raw := req.Context().Value(rkmid.EntryNameKey); raw != nil {
 		return raw.(string)
 	}
 
@@ -136,7 +129,7 @@ func GetTraceSpan(req *http.Request) trace.Span {
 
 	_, span = noopTracerProvider.Tracer("rk-trace-noop").Start(req.Context(), "noop-span")
 
-	if raw := req.Context().Value(rkzerointer.RpcSpanKey); raw != nil {
+	if raw := req.Context().Value(rkmid.SpanKey); raw != nil {
 		return raw.(trace.Span)
 	}
 
@@ -149,7 +142,7 @@ func GetTracer(req *http.Request) trace.Tracer {
 		return noopTracerProvider.Tracer("rk-trace-noop")
 	}
 
-	if raw := req.Context().Value(rkzerointer.RpcTracerKey); raw != nil {
+	if raw := req.Context().Value(rkmid.TracerKey); raw != nil {
 		return raw.(trace.Tracer)
 	}
 
@@ -162,7 +155,7 @@ func GetTracerProvider(req *http.Request) trace.TracerProvider {
 		return noopTracerProvider
 	}
 
-	if raw := req.Context().Value(rkzerointer.RpcTracerProviderKey); raw != nil {
+	if raw := req.Context().Value(rkmid.TracerProviderKey); raw != nil {
 		return raw.(trace.TracerProvider)
 	}
 
@@ -175,7 +168,7 @@ func GetTracerPropagator(req *http.Request) propagation.TextMapPropagator {
 		return nil
 	}
 
-	if raw := req.Context().Value(rkzerointer.RpcPropagatorKey); raw != nil {
+	if raw := req.Context().Value(rkmid.PropagatorKey); raw != nil {
 		return raw.(propagation.TextMapPropagator)
 	}
 
@@ -220,7 +213,7 @@ func GetJwtToken(req *http.Request) *jwt.Token {
 		return nil
 	}
 
-	if raw := req.Context().Value(rkzerointer.RpcJwtTokenKey); raw != nil {
+	if raw := req.Context().Value(rkmid.JwtTokenKey); raw != nil {
 		if res, ok := raw.(*jwt.Token); ok {
 			return res
 		}
@@ -235,7 +228,7 @@ func GetCsrfToken(req *http.Request) string {
 		return ""
 	}
 
-	if raw := req.Context().Value(rkzerointer.RpcCsrfTokenKey); raw != nil {
+	if raw := req.Context().Value(rkmid.CsrfTokenKey); raw != nil {
 		if res, ok := raw.(string); ok {
 			return res
 		}

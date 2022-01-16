@@ -6,74 +6,55 @@
 package rkzerolog
 
 import (
-	"bytes"
 	"github.com/rookie-ninja/rk-entry/entry"
+	rkmidlog "github.com/rookie-ninja/rk-entry/middleware/log"
 	"github.com/rookie-ninja/rk-query"
-	"github.com/rookie-ninja/rk-zero/interceptor/context"
+	rkzeroctx "github.com/rookie-ninja/rk-zero/interceptor/context"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-var userFunc = func(w http.ResponseWriter, req *http.Request) {
+var userHandler = func(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+func TestInterceptor(t *testing.T) {
+	defer assertNotPanic(t)
+
+	beforeCtx := rkmidlog.NewBeforeCtx()
+	afterCtx := rkmidlog.NewAfterCtx()
+	mock := rkmidlog.NewOptionSetMock(beforeCtx, afterCtx)
+	inter := Interceptor(rkmidlog.WithMockOptionSet(mock))
+	req, w := newReqAndWriter()
+
+	// happy case
+	event := rkentry.NoopEventLoggerEntry().GetEventFactory().CreateEventNoop()
+	logger := rkentry.NoopZapLoggerEntry().GetLogger()
+	beforeCtx.Output.Event = event
+	beforeCtx.Output.Logger = logger
+
+	var eventFromCtx rkquery.Event
+	var loggerFromCtx *zap.Logger
+	inter(func(w http.ResponseWriter, req *http.Request) {
+		eventFromCtx = rkzeroctx.GetEvent(req)
+		loggerFromCtx = rkzeroctx.GetLogger(req, w)
+		w.WriteHeader(http.StatusOK)
+	})(w, req)
+
+	assert.Equal(t, event, eventFromCtx)
+	assert.Equal(t, logger, loggerFromCtx)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
 func newReqAndWriter() (*http.Request, *httptest.ResponseRecorder) {
-	var buf bytes.Buffer
-	req := httptest.NewRequest(http.MethodGet, "/ut-path", &buf)
+	req := httptest.NewRequest(http.MethodGet, "/ut-path", nil)
+	req.Header = http.Header{}
 	writer := httptest.NewRecorder()
 	return req, writer
-}
-
-func TestInterceptor_WithShouldNotLog(t *testing.T) {
-	defer assertNotPanic(t)
-
-	req, writer := newReqAndWriter()
-	req.URL.Path = "/rk/v1/assets"
-
-	handler := Interceptor(
-		WithEntryNameAndType("ut-entry", "ut-type"),
-		WithZapLoggerEntry(rkentry.NoopZapLoggerEntry()),
-		WithEventLoggerEntry(rkentry.NoopEventLoggerEntry()))
-
-	f := handler(userFunc)
-	f(writer, req)
-
-	assert.Equal(t, http.StatusOK, writer.Result().StatusCode)
-}
-
-func TestInterceptor_HappyCase(t *testing.T) {
-	defer assertNotPanic(t)
-
-	req, writer := newReqAndWriter()
-
-	handler := Interceptor(
-		WithEntryNameAndType("ut-entry", "ut-type"),
-		WithZapLoggerEntry(rkentry.NoopZapLoggerEntry()),
-		WithEventLoggerEntry(rkentry.NoopEventLoggerEntry()))
-
-	writer.Header().Set(rkzeroctx.RequestIdKey, "ut-request-id")
-	writer.Header().Set(rkzeroctx.TraceIdKey, "ut-trace-id")
-
-	f := handler(func(w http.ResponseWriter, request *http.Request) {
-		req = request
-		w.WriteHeader(http.StatusOK)
-	})
-	f(writer, req)
-
-	assert.Equal(t, http.StatusOK, writer.Result().StatusCode)
-
-	event := rkzeroctx.GetEvent(req)
-
-	assert.NotEmpty(t, event.GetRemoteAddr())
-	assert.NotEmpty(t, event.ListPayloads())
-	assert.NotEmpty(t, event.GetOperation())
-	assert.NotEmpty(t, event.GetRequestId())
-	assert.NotEmpty(t, event.GetTraceId())
-	assert.NotEmpty(t, event.GetResCode())
-	assert.Equal(t, rkquery.Ended, event.GetEventStatus())
 }
 
 func assertNotPanic(t *testing.T) {

@@ -8,91 +8,45 @@ package rkzerolog
 
 import (
 	"context"
-	"github.com/rookie-ninja/rk-entry/entry"
-	"github.com/rookie-ninja/rk-query"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
+	rkmidlog "github.com/rookie-ninja/rk-entry/middleware/log"
 	"github.com/rookie-ninja/rk-zero/interceptor"
 	"github.com/rookie-ninja/rk-zero/interceptor/context"
 	"github.com/tal-tech/go-zero/rest"
-	"go.uber.org/zap"
 	"net/http"
 	"strconv"
-	"time"
 )
 
-// Interceptor returns a gin.HandlerFunc (middleware) that logs requests using uber-go/zap.
-func Interceptor(opts ...Option) rest.Middleware {
-	set := newOptionSet(opts...)
+// Interceptor returns a rest.Middleware (middleware) that logs requests using uber-go/zap.
+func Interceptor(opts ...rkmidlog.Option) rest.Middleware {
+	set := rkmidlog.NewOptionSet(opts...)
 
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(writer http.ResponseWriter, req *http.Request) {
 			// wrap writer
 			writer = rkzerointer.WrapResponseWriter(writer)
 
-			req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcEntryNameKey, set.EntryName))
+			ctx := context.WithValue(req.Context(), rkmid.EntryNameKey, set.GetEntryName())
+			req = req.WithContext(ctx)
 
-			req = before(req, set)
+			// call before
+			beforeCtx := set.BeforeCtx(req)
+			set.Before(beforeCtx)
+
+			ctx = context.WithValue(req.Context(), rkmid.EventKey, beforeCtx.Output.Event)
+			req = req.WithContext(ctx)
+
+			ctx = context.WithValue(req.Context(), rkmid.LoggerKey, beforeCtx.Output.Logger)
+			req = req.WithContext(ctx)
 
 			next(writer, req)
 
-			after(req, writer, set)
+			// call after
+			afterCtx := set.AfterCtx(
+				rkzeroctx.GetRequestId(writer),
+				rkzeroctx.GetTraceId(writer),
+				strconv.Itoa(writer.(*rkzerointer.RkResponseWriter).Code))
+			set.After(beforeCtx, afterCtx)
 		}
 	}
-}
-
-func before(req *http.Request, set *optionSet) *http.Request {
-	var event rkquery.Event
-	if rkzerointer.ShouldLog(req) {
-		event = set.eventLoggerEntry.GetEventFactory().CreateEvent(
-			rkquery.WithZapLogger(set.eventLoggerOverride),
-			rkquery.WithEncoding(set.eventLoggerEncoding),
-			rkquery.WithAppName(rkentry.GlobalAppCtx.GetAppInfoEntry().AppName),
-			rkquery.WithAppVersion(rkentry.GlobalAppCtx.GetAppInfoEntry().Version),
-			rkquery.WithEntryName(set.EntryName),
-			rkquery.WithEntryType(set.EntryType))
-	} else {
-		event = set.eventLoggerEntry.GetEventFactory().CreateEventNoop()
-	}
-
-	event.SetStartTime(time.Now())
-
-	remoteIp, remotePort := rkzerointer.GetRemoteAddressSet(req)
-	// handle remote address
-	event.SetRemoteAddr(remoteIp + ":" + remotePort)
-
-	payloads := []zap.Field{
-		zap.String("apiPath", req.URL.Path),
-		zap.String("apiMethod", req.Method),
-		zap.String("apiQuery", req.URL.RawQuery),
-		zap.String("apiProtocol", req.Proto),
-		zap.String("userAgent", req.UserAgent()),
-	}
-
-	// handle payloads
-	event.AddPayloads(payloads...)
-
-	// handle operation
-	event.SetOperation(req.URL.Path)
-
-	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcEventKey, event))
-	req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcLoggerKey, set.ZapLogger))
-
-	return req
-}
-
-func after(req *http.Request, writer http.ResponseWriter, set *optionSet) {
-	event := rkzeroctx.GetEvent(req)
-
-	if requestId := rkzeroctx.GetRequestId(writer); len(requestId) > 0 {
-		event.SetEventId(requestId)
-		event.SetRequestId(requestId)
-	}
-
-	if traceId := rkzeroctx.GetTraceId(writer); len(traceId) > 0 {
-		event.SetTraceId(traceId)
-	}
-
-	// writer must be RkResponseWriter
-	event.SetResCode(strconv.Itoa(writer.(*rkzerointer.RkResponseWriter).Code))
-	event.SetEndTime(time.Now())
-	event.Finish()
 }

@@ -8,41 +8,33 @@ package rkzerometrics
 
 import (
 	"context"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
+	rkmidmetrics "github.com/rookie-ninja/rk-entry/middleware/metrics"
 	"github.com/rookie-ninja/rk-zero/interceptor"
 	"github.com/tal-tech/go-zero/rest"
 	"net/http"
-	"time"
+	"strconv"
 )
 
 // Interceptor create a new prometheus metrics interceptor with options.
-func Interceptor(opts ...Option) rest.Middleware {
-	set := newOptionSet(opts...)
+func Interceptor(opts ...rkmidmetrics.Option) rest.Middleware {
+	set := rkmidmetrics.NewOptionSet(opts...)
 
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(writer http.ResponseWriter, req *http.Request) {
 			// wrap writer
 			writer = rkzerointer.WrapResponseWriter(writer)
 
-			req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcEntryNameKey, set.EntryName))
+			ctx := context.WithValue(req.Context(), rkmid.EntryNameKey, set.GetEntryName())
+			req = req.WithContext(ctx)
 
-			// start timer
-			startTime := time.Now()
+			beforeCtx := set.BeforeCtx(req)
+			set.Before(beforeCtx)
 
 			next(writer, req)
 
-			// end timer
-			elapsed := time.Now().Sub(startTime)
-
-			// ignoring /rk/v1/assets, /rk/v1/tv and /sw/ path while logging since these are internal APIs.
-			if rkzerointer.ShouldLog(req) {
-				if durationMetrics := GetServerDurationMetrics(req, writer); durationMetrics != nil {
-					durationMetrics.Observe(float64(elapsed.Nanoseconds()))
-				}
-
-				if resCodeMetrics := GetServerResCodeMetrics(req, writer); resCodeMetrics != nil {
-					resCodeMetrics.Inc()
-				}
-			}
+			afterCtx := set.AfterCtx(strconv.Itoa(writer.(*rkzerointer.RkResponseWriter).Code))
+			set.After(beforeCtx, afterCtx)
 		}
 	}
 }

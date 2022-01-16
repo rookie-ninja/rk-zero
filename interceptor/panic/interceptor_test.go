@@ -6,36 +6,30 @@
 package rkzeropanic
 
 import (
-	"bytes"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-var userFunc = func(w http.ResponseWriter, req *http.Request) {
+var userHandler = func(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusOK)
-}
-
-func newReqAndWriter() (*http.Request, *httptest.ResponseRecorder) {
-	var buf bytes.Buffer
-	req := httptest.NewRequest(http.MethodGet, "/ut-path", &buf)
-	writer := httptest.NewRecorder()
-	return req, writer
 }
 
 func TestInterceptor(t *testing.T) {
 	defer assertNotPanic(t)
 
-	req, writer := newReqAndWriter()
+	inter := Interceptor()
+	req, w := newReqAndWriter()
 
-	handler := Interceptor(
-		WithEntryNameAndType("ut-entry", "ut-type"))
+	inter(userHandler)(w, req)
+}
 
-	f := handler(userFunc)
-	f(writer, req)
-
-	assert.Equal(t, http.StatusOK, writer.Result().StatusCode)
+func newReqAndWriter() (*http.Request, *httptest.ResponseRecorder) {
+	req := httptest.NewRequest(http.MethodGet, "/ut-path", nil)
+	req.Header = http.Header{}
+	writer := httptest.NewRecorder()
+	return req, writer
 }
 
 func assertNotPanic(t *testing.T) {

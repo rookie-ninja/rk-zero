@@ -8,47 +8,35 @@ package rkzeropanic
 
 import (
 	"context"
-	"fmt"
 	"github.com/rookie-ninja/rk-common/error"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
+	rkmidpanic "github.com/rookie-ninja/rk-entry/middleware/panic"
 	"github.com/rookie-ninja/rk-zero/interceptor"
 	"github.com/rookie-ninja/rk-zero/interceptor/context"
 	"github.com/tal-tech/go-zero/rest"
 	"github.com/tal-tech/go-zero/rest/httpx"
-	"go.uber.org/zap"
 	"net/http"
-	"runtime/debug"
 )
 
 // Interceptor returns a rest.Middleware (middleware)
-func Interceptor(opts ...Option) rest.Middleware {
-	set := newOptionSet(opts...)
+func Interceptor(opts ...rkmidpanic.Option) rest.Middleware {
+	set := rkmidpanic.NewOptionSet(opts...)
 
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(writer http.ResponseWriter, req *http.Request) {
 			// wrap writer
 			writer = rkzerointer.WrapResponseWriter(writer)
 
-			req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcEntryNameKey, set.EntryName))
+			ctx := context.WithValue(req.Context(), rkmid.EntryNameKey, set.GetEntryName())
+			req = req.WithContext(ctx)
 
-			defer func() {
-				if recv := recover(); recv != nil {
-					var res *rkerror.ErrorResp
+			handlerFunc := func(resp *rkerror.ErrorResp) {
+				httpx.WriteJson(writer, resp.Err.Code, resp)
+			}
+			beforeCtx := set.BeforeCtx(rkzeroctx.GetEvent(req), rkzeroctx.GetLogger(req, writer), handlerFunc)
+			set.Before(beforeCtx)
 
-					if se, ok := recv.(*rkerror.ErrorResp); ok {
-						res = se
-					} else if re, ok := recv.(error); ok {
-						res = rkerror.FromError(re)
-					} else {
-						res = rkerror.New(rkerror.WithMessage(fmt.Sprintf("%v", recv)))
-					}
-
-					rkzeroctx.GetEvent(req).SetCounter("panic", 1)
-					rkzeroctx.GetEvent(req).AddErr(res.Err)
-					rkzeroctx.GetLogger(req, writer).Error(fmt.Sprintf("panic occurs:\n%s", string(debug.Stack())), zap.Error(res.Err))
-
-					httpx.WriteJson(writer, http.StatusInternalServerError, res)
-				}
-			}()
+			defer beforeCtx.Output.DeferFunc()
 
 			next(writer, req)
 		}

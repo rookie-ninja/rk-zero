@@ -8,7 +8,8 @@ package rkzerosec
 
 import (
 	"context"
-	"fmt"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
+	rkmidsec "github.com/rookie-ninja/rk-entry/middleware/secure"
 	rkzerointer "github.com/rookie-ninja/rk-zero/interceptor"
 	"github.com/tal-tech/go-zero/rest"
 	"net/http"
@@ -18,59 +19,24 @@ import (
 //
 // Mainly copied from bellow.
 // https://github.com/labstack/echo/blob/master/middleware/secure.go
-func Interceptor(opts ...Option) rest.Middleware {
-	set := newOptionSet(opts...)
+func Interceptor(opts ...rkmidsec.Option) rest.Middleware {
+	set := rkmidsec.NewOptionSet(opts...)
 
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(writer http.ResponseWriter, req *http.Request) {
 			// wrap writer
 			writer = rkzerointer.WrapResponseWriter(writer)
 
-			req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcEntryNameKey, set.EntryName))
+			ctx := context.WithValue(req.Context(), rkmid.EntryNameKey, set.GetEntryName())
+			req = req.WithContext(ctx)
 
-			if set.Skipper(req) {
-				next(writer, req)
-			}
 
-			// Add X-XSS-Protection header
-			if set.XSSProtection != "" {
-				writer.Header().Set(headerXXSSProtection, set.XSSProtection)
-			}
+			// case 1: return to user if error occur
+			beforeCtx := set.BeforeCtx(req)
+			set.Before(beforeCtx)
 
-			// Add X-Content-Type-Options header
-			if set.ContentTypeNosniff != "" {
-				writer.Header().Set(headerXContentTypeOptions, set.ContentTypeNosniff)
-			}
-
-			// Add X-Frame-Options header
-			if set.XFrameOptions != "" {
-				writer.Header().Set(headerXFrameOptions, set.XFrameOptions)
-			}
-
-			// Add Strict-Transport-Security header
-			if (req.TLS != nil || (req.Header.Get(headerXForwardedProto) == "https")) && set.HSTSMaxAge != 0 {
-				subdomains := ""
-				if !set.HSTSExcludeSubdomains {
-					subdomains = "; includeSubdomains"
-				}
-				if set.HSTSPreloadEnabled {
-					subdomains = fmt.Sprintf("%s; preload", subdomains)
-				}
-				writer.Header().Set(headerStrictTransportSecurity, fmt.Sprintf("max-age=%d%s", set.HSTSMaxAge, subdomains))
-			}
-
-			// Add Content-Security-Policy-Report-Only or Content-Security-Policy header
-			if set.ContentSecurityPolicy != "" {
-				if set.CSPReportOnly {
-					writer.Header().Set(headerContentSecurityPolicyReportOnly, set.ContentSecurityPolicy)
-				} else {
-					writer.Header().Set(headerContentSecurityPolicy, set.ContentSecurityPolicy)
-				}
-			}
-
-			// Add Referrer-Policy header
-			if set.ReferrerPolicy != "" {
-				writer.Header().Set(headerReferrerPolicy, set.ReferrerPolicy)
+			for k, v := range beforeCtx.Output.HeadersToReturn {
+				writer.Header().Set(k, v)
 			}
 
 			next(writer, req)

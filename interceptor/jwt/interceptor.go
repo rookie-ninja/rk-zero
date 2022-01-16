@@ -8,7 +8,8 @@ package rkzerojwt
 
 import (
 	"context"
-	"github.com/rookie-ninja/rk-common/error"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
+	rkmidjwt "github.com/rookie-ninja/rk-entry/middleware/jwt"
 	"github.com/rookie-ninja/rk-zero/interceptor"
 	"github.com/tal-tech/go-zero/rest"
 	"github.com/tal-tech/go-zero/rest/httpx"
@@ -19,55 +20,29 @@ import (
 //
 // Mainly copied from bellow.
 // https://github.com/labstack/echo/blob/master/middleware/jwt.go
-func Interceptor(opts ...Option) rest.Middleware {
-	set := newOptionSet(opts...)
+func Interceptor(opts ...rkmidjwt.Option) rest.Middleware {
+	set := rkmidjwt.NewOptionSet(opts...)
 
 	return func(next http.HandlerFunc) http.HandlerFunc {
 		return func(writer http.ResponseWriter, req *http.Request) {
 			// wrap writer
 			writer = rkzerointer.WrapResponseWriter(writer)
 
-			ctx := context.WithValue(req.Context(), rkzerointer.RpcEntryNameKey, set.EntryName)
+			ctx := context.WithValue(req.Context(), rkmid.EntryNameKey, set.GetEntryName())
 			req = req.WithContext(ctx)
 
-			if set.Skipper(req) {
-				next(writer, req)
-				return
-			}
+			beforeCtx := set.BeforeCtx(req, nil)
+			set.Before(beforeCtx)
 
-			// extract token from extractor
-			var auth string
-			var err error
-			for _, extractor := range set.extractors {
-				// Extract token from extractor, if it's not fail break the loop and
-				// set auth
-				auth, err = extractor(req)
-				if err == nil {
-					break
-				}
-			}
-
-			if err != nil {
-				httpx.WriteJson(writer, http.StatusUnauthorized, rkerror.New(
-					rkerror.WithHttpCode(http.StatusUnauthorized),
-					rkerror.WithMessage("invalid or expired jwt"),
-					rkerror.WithDetails(err)))
-				return
-			}
-
-			// parse token
-			token, err := set.ParseTokenFunc(auth, req)
-
-			if err != nil {
-				httpx.WriteJson(writer, http.StatusUnauthorized, rkerror.New(
-					rkerror.WithHttpCode(http.StatusUnauthorized),
-					rkerror.WithMessage("invalid or expired jwt"),
-					rkerror.WithDetails(err)))
+			// case 1: error response
+			if beforeCtx.Output.ErrResp != nil {
+				httpx.WriteJson(writer, beforeCtx.Output.ErrResp.Err.Code, beforeCtx.Output.ErrResp)
 				return
 			}
 
 			// insert into context
-			req = req.WithContext(context.WithValue(req.Context(), rkzerointer.RpcJwtTokenKey, token))
+			ctx = context.WithValue(req.Context(), rkmid.JwtTokenKey, beforeCtx.Output.JwtToken)
+			req = req.WithContext(ctx)
 
 			next(writer, req)
 		}

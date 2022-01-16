@@ -108,12 +108,6 @@ zero:
 #        paths:
 #          - path: "/rk/v1/healthy"                        # Optional, default: ""
 #            reqPerSec: 0                                  # Optional, default: 1000000
-#      timeout:
-#        enabled: false                                    # Optional, default: false
-#        timeoutMs: 5000                                   # Optional, default: 5000
-#        paths:
-#          - path: "/rk/v1/healthy"                        # Optional, default: ""
-#            timeoutMs: 1000                               # Optional, default: 5000
 #      jwt:
 #        enabled: true                                     # Optional, default: false
 #        signingKey: "my-secret"                           # Required
