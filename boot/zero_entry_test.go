@@ -190,7 +190,6 @@ func TestEchoEntry_Bootstrap(t *testing.T) {
 		WithPromEntry(rkentry.RegisterPromEntry()))
 	go entry.Bootstrap(context.Background())
 	time.Sleep(time.Second)
-	validateServerIsUp(t, 8081, entry.IsTlsEnabled())
 	entry.Interrupt(context.TODO())
 	// force to kill it because go-zero do not stop server with stop() call
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
