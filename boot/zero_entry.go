@@ -257,8 +257,7 @@ func RegisterZeroEntriesWithConfig(configFilePath string) map[string]rkentry.Ent
 			WithPromEntry(promEntry),
 			WithTvEntry(tvEntry),
 			WithCommonServiceEntry(commonServiceEntry),
-			WithSwEntry(swEntry),
-			WithInterceptors(inters...))
+			WithSwEntry(swEntry))
 
 		entry.AddInterceptor(inters...)
 
