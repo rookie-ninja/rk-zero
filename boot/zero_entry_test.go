@@ -270,8 +270,6 @@ func validateServerIsUp(t *testing.T, port uint64, isTls bool) {
 	}
 }
 
-
-
 func assertNotPanic(t *testing.T) {
 	if r := recover(); r != nil {
 		// Expect panic to be called with non nil error
