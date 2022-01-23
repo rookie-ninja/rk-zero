@@ -8,12 +8,14 @@ package rkzerotrace
 
 import (
 	"context"
+	"net/http"
+
 	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	rkmidtrace "github.com/rookie-ninja/rk-entry/middleware/tracing"
 	"github.com/rookie-ninja/rk-zero/interceptor"
 	"github.com/rookie-ninja/rk-zero/interceptor/context"
 	"github.com/tal-tech/go-zero/rest"
-	"net/http"
+	"go.opentelemetry.io/otel"
 )
 
 // Interceptor create a interceptor with opentelemetry.
@@ -36,6 +38,11 @@ func Interceptor(opts ...rkmidtrace.Option) rest.Middleware {
 
 			ctx = context.WithValue(req.Context(), rkmid.PropagatorKey, set.GetPropagator())
 			req = req.WithContext(ctx)
+
+			// go-zero从全局对象读数据，需要将Provider、Propagator等信息更新到全局对象
+			// https://github.com/zeromicro/go-zero/blob/a91c3907a8f68b6f08b1bad0125d7d5016105032/rest/handler/tracinghandler.go#L16
+			otel.SetTracerProvider(set.GetProvider())
+			otel.SetTextMapPropagator(set.GetPropagator())
 
 			beforeCtx := set.BeforeCtx(req, false)
 			set.Before(beforeCtx)
