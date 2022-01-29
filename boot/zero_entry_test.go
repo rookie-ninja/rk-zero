@@ -13,8 +13,8 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	rkentry "github.com/rookie-ninja/rk-entry/entry"
-	rkzerometa "github.com/rookie-ninja/rk-zero/interceptor/meta"
+	"github.com/rookie-ninja/rk-entry/entry"
+	"github.com/rookie-ninja/rk-zero/interceptor/meta"
 	"github.com/stretchr/testify/assert"
 	"github.com/tal-tech/go-zero/rest"
 	"io/ioutil"
@@ -293,4 +293,3 @@ func assertPanic(t *testing.T) {
 func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
-

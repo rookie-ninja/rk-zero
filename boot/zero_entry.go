@@ -52,7 +52,7 @@ import (
 
 const (
 	// ZeroEntryType type of entry
-	ZeroEntryType = "ZeroEntry"
+	ZeroEntryType = "Zero"
 	// ZeroEntryDescription description of entry
 	ZeroEntryDescription = "Internal RK entry which helps to bootstrap with go-zero framework."
 )
@@ -66,13 +66,11 @@ func init() {
 // BootConfig boot config which is for zero entry.
 type BootConfig struct {
 	Zero []struct {
-		Enabled     bool   `yaml:"enabled" json:"enabled"`
-		Name        string `yaml:"name" json:"name"`
-		Port        uint64 `yaml:"port" json:"port"`
-		Description string `yaml:"description" json:"description"`
-		Cert        struct {
-			Ref string `yaml:"ref" json:"ref"`
-		} `yaml:"cert" json:"cert"`
+		Enabled       bool                            `yaml:"enabled" json:"enabled"`
+		Name          string                          `yaml:"name" json:"name"`
+		Port          uint64                          `yaml:"port" json:"port"`
+		Description   string                          `yaml:"description" json:"description"`
+		CertEntry     string                          `yaml:"certEntry" json:"certEntry"`
 		SW            rkentry.BootConfigSw            `yaml:"sw" json:"sw"`
 		CommonService rkentry.BootConfigCommonService `yaml:"commonService" json:"commonService"`
 		TV            rkentry.BootConfigTv            `yaml:"tv" json:"tv"`
@@ -90,12 +88,8 @@ type BootConfig struct {
 			TracingTelemetry rkmidtrace.BootConfig   `yaml:"tracingTelemetry" json:"tracingTelemetry"`
 		} `yaml:"interceptors" json:"interceptors"`
 		Logger struct {
-			ZapLogger struct {
-				Ref string `yaml:"ref" json:"ref"`
-			} `yaml:"zapLogger" json:"zapLogger"`
-			EventLogger struct {
-				Ref string `yaml:"ref" json:"ref"`
-			} `yaml:"eventLogger" json:"eventLogger"`
+			ZapLogger   string `yaml:"zapLogger" json:"zapLogger"`
+			EventLogger string `yaml:"eventLogger" json:"eventLogger"`
 		} `yaml:"logger" json:"logger"`
 	} `yaml:"zero" json:"zero"`
 }
@@ -154,12 +148,12 @@ func RegisterZeroEntriesWithConfig(configFilePath string) map[string]rkentry.Ent
 
 		name := element.Name
 
-		zapLoggerEntry := rkentry.GlobalAppCtx.GetZapLoggerEntry(element.Logger.ZapLogger.Ref)
+		zapLoggerEntry := rkentry.GlobalAppCtx.GetZapLoggerEntry(element.Logger.ZapLogger)
 		if zapLoggerEntry == nil {
 			zapLoggerEntry = rkentry.GlobalAppCtx.GetZapLoggerEntryDefault()
 		}
 
-		eventLoggerEntry := rkentry.GlobalAppCtx.GetEventLoggerEntry(element.Logger.EventLogger.Ref)
+		eventLoggerEntry := rkentry.GlobalAppCtx.GetEventLoggerEntry(element.Logger.EventLogger)
 		if eventLoggerEntry == nil {
 			eventLoggerEntry = rkentry.GlobalAppCtx.GetEventLoggerEntryDefault()
 		}
@@ -245,7 +239,7 @@ func RegisterZeroEntriesWithConfig(configFilePath string) map[string]rkentry.Ent
 				rkmidlimit.ToOptions(&element.Interceptors.RateLimit, element.Name, ZeroEntryType)...))
 		}
 
-		certEntry := rkentry.GlobalAppCtx.GetCertEntry(element.Cert.Ref)
+		certEntry := rkentry.GlobalAppCtx.GetCertEntry(element.CertEntry)
 
 		entry := RegisterZeroEntry(
 			WithName(name),
@@ -324,6 +318,10 @@ func RegisterZeroEntry(opts ...ZeroEntryOption) *ZeroEntry {
 
 		rest.WithTLSConfig(entry.TlsConfig)(entry.Server)
 	}
+
+	// add entry name and entry type into loki syncer if enabled
+	entry.ZapLoggerEntry.AddEntryLabelToLokiSyncer(entry)
+	entry.EventLoggerEntry.AddEntryLabelToLokiSyncer(entry)
 
 	entry.Server.Use(rkzeropanic.Interceptor(
 		rkmidpanic.WithEntryNameAndType(entry.EntryName, entry.EntryType)))

@@ -54,4 +54,3 @@ func assertNotPanic(t *testing.T) {
 		assert.True(t, true)
 	}
 }
-
