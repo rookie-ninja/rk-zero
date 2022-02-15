@@ -11,8 +11,8 @@ import (
 	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	rkmidauth "github.com/rookie-ninja/rk-entry/middleware/auth"
 	"github.com/rookie-ninja/rk-zero/interceptor"
-	"github.com/tal-tech/go-zero/rest"
-	"github.com/tal-tech/go-zero/rest/httpx"
+	"github.com/zeromicro/go-zero/rest"
+	"github.com/zeromicro/go-zero/rest/httpx"
 	"net/http"
 )
 

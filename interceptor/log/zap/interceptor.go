@@ -12,7 +12,7 @@ import (
 	rkmidlog "github.com/rookie-ninja/rk-entry/middleware/log"
 	"github.com/rookie-ninja/rk-zero/interceptor"
 	"github.com/rookie-ninja/rk-zero/interceptor/context"
-	"github.com/tal-tech/go-zero/rest"
+	"github.com/zeromicro/go-zero/rest"
 	"net/http"
 	"strconv"
 )
