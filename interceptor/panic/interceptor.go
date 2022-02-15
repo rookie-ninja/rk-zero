@@ -13,8 +13,8 @@ import (
 	rkmidpanic "github.com/rookie-ninja/rk-entry/middleware/panic"
 	"github.com/rookie-ninja/rk-zero/interceptor"
 	"github.com/rookie-ninja/rk-zero/interceptor/context"
-	"github.com/tal-tech/go-zero/rest"
-	"github.com/tal-tech/go-zero/rest/httpx"
+	"github.com/zeromicro/go-zero/rest"
+	"github.com/zeromicro/go-zero/rest/httpx"
 	"net/http"
 )
 

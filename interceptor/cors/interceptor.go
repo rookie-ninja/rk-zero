@@ -11,7 +11,7 @@ import (
 	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	rkmidcors "github.com/rookie-ninja/rk-entry/middleware/cors"
 	"github.com/rookie-ninja/rk-zero/interceptor"
-	"github.com/tal-tech/go-zero/rest"
+	"github.com/zeromicro/go-zero/rest"
 	"net/http"
 )
 

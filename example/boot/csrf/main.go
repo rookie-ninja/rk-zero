@@ -10,8 +10,8 @@ import (
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/rookie-ninja/rk-zero/boot"
 	"github.com/rookie-ninja/rk-zero/interceptor/context"
-	"github.com/tal-tech/go-zero/rest"
-	"github.com/tal-tech/go-zero/rest/httpx"
+	"github.com/zeromicro/go-zero/rest"
+	"github.com/zeromicro/go-zero/rest/httpx"
 	"net/http"
 )
 

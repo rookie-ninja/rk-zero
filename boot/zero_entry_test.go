@@ -16,7 +16,7 @@ import (
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/rookie-ninja/rk-zero/interceptor/meta"
 	"github.com/stretchr/testify/assert"
-	"github.com/tal-tech/go-zero/rest"
+	"github.com/zeromicro/go-zero/rest"
 	"io/ioutil"
 	"math/big"
 	"net"

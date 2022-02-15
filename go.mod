@@ -11,7 +11,7 @@ require (
 	github.com/rookie-ninja/rk-query v1.2.10
 	github.com/streadway/handy v0.0.0-20190108123426-d5acb3125c2a
 	github.com/stretchr/testify v1.7.0
-	github.com/tal-tech/go-zero v1.2.4
+	github.com/zeromicro/go-zero v1.3.0
 	go.opentelemetry.io/otel v1.3.0
 	go.opentelemetry.io/otel/trace v1.3.0
 	go.uber.org/zap v1.20.0
