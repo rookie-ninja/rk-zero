@@ -58,7 +58,7 @@ All middlewares could be configured via YAML or Code.
 
 
 ## Installation
-`go get github.com/rookie-ninja/rk-zero/v2`
+`go get github.com/rookie-ninja/rk-zero`
 
 ## Quick Start
 In the bellow example, we will start microservice with bellow functionality and middlewares enabled via YAML.
@@ -115,7 +115,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/rookie-ninja/rk-entry/v2/entry"
-	"github.com/rookie-ninja/rk-zero/v2/boot"
+	"github.com/rookie-ninja/rk-zero/boot"
 	"github.com/zeromicro/go-zero/rest"
 	"net/http"
 )
