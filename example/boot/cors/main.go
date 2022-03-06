@@ -6,16 +6,20 @@ package main
 
 import (
 	"context"
-	"github.com/rookie-ninja/rk-entry/entry"
-	"github.com/rookie-ninja/rk-zero/boot"
+	_ "embed"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
+	"github.com/rookie-ninja/rk-zero/v2/boot"
 )
 
+//go:embed boot.yaml
+var boot []byte
+
 func main() {
-	// Bootstrap basic entries from boot config.
-	rkentry.RegisterInternalEntriesFromConfig("example/boot/cors/boot.yaml")
+	// Bootstrap preload entries
+	rkentry.BootstrapPreloadEntryYAML(boot)
 
 	// Bootstrap zero entry from boot config
-	res := rkzero.RegisterZeroEntriesWithConfig("example/boot/cors/boot.yaml")
+	res := rkzero.RegisterZeroEntryYAML(boot)
 
 	// Bootstrap zero entry
 	res["greeter"].Bootstrap(context.Background())

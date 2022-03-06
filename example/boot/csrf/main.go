@@ -6,21 +6,25 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/entry"
-	"github.com/rookie-ninja/rk-zero/boot"
-	"github.com/rookie-ninja/rk-zero/interceptor/context"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
+	"github.com/rookie-ninja/rk-zero/v2/boot"
+	"github.com/rookie-ninja/rk-zero/v2/middleware/context"
 	"github.com/zeromicro/go-zero/rest"
 	"github.com/zeromicro/go-zero/rest/httpx"
 	"net/http"
 )
 
+//go:embed boot.yaml
+var boot []byte
+
 func main() {
-	// Bootstrap basic entries from boot config.
-	rkentry.RegisterInternalEntriesFromConfig("example/boot/csrf/boot.yaml")
+	// Bootstrap preload entries
+	rkentry.BootstrapPreloadEntryYAML(boot)
 
 	// Bootstrap zero entry from boot config
-	res := rkzero.RegisterZeroEntriesWithConfig("example/boot/csrf/boot.yaml")
+	res := rkzero.RegisterZeroEntryYAML(boot)
 
 	// Register GET and POST method of /rk/v1/greeter
 	entry := res["greeter"].(*rkzero.ZeroEntry)

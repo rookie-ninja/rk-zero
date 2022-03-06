@@ -13,15 +13,13 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"github.com/rookie-ninja/rk-entry/entry"
-	"github.com/rookie-ninja/rk-zero/interceptor/meta"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
+	"github.com/rookie-ninja/rk-zero/v2/middleware/meta"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/rest"
-	"io/ioutil"
 	"math/big"
 	"net"
 	"os"
-	"path"
 	"strconv"
 	"syscall"
 	"testing"
@@ -40,16 +38,16 @@ zero:
      path: "sw"
    commonService:
      enabled: true
-   tv:
+   docs:
      enabled: true
    prom:
      enabled: true
      pusher:
        enabled: false
-   interceptors:
-     loggingZap:
+   middleware:
+     logging:
        enabled: true
-     metricsProm:
+     prom:
        enabled: true
      auth:
        enabled: true
@@ -57,7 +55,7 @@ zero:
          - "user:pass"
      meta:
        enabled: true
-     tracingTelemetry:
+     trace:
        enabled: true
      ratelimit:
        enabled: true
@@ -71,8 +69,6 @@ zero:
        enabled: true
      csrf:
        enabled: true
-     gzip:
-       enabled: true
  - name: greeter2
    port: 2008
    enabled: true
@@ -81,12 +77,12 @@ zero:
      path: "sw"
    commonService:
      enabled: true
-   tv:
+   docs:
      enabled: true
-   interceptors:
-     loggingZap:
+   middleware:
+     logging:
        enabled: true
-     metricsProm:
+     prom:
        enabled: true
      auth:
        enabled: true
@@ -103,10 +99,10 @@ func TestGetZeroEntry(t *testing.T) {
 	assert.Nil(t, GetZeroEntry("entry-name"))
 
 	// happy case
-	echoEntry := RegisterZeroEntry(WithName("ut"))
-	assert.Equal(t, echoEntry, GetZeroEntry("ut"))
+	zeroEntry := RegisterZeroEntry(WithName("ut"))
+	assert.Equal(t, zeroEntry, GetZeroEntry("ut"))
 
-	rkentry.GlobalAppCtx.RemoveEntry("ut")
+	rkentry.GlobalAppCtx.RemoveEntry(zeroEntry)
 }
 
 func TestRegisterZeroEntry(t *testing.T) {
@@ -117,29 +113,51 @@ func TestRegisterZeroEntry(t *testing.T) {
 	assert.NotEmpty(t, entry.GetType())
 	assert.NotEmpty(t, entry.GetDescription())
 	assert.NotEmpty(t, entry.String())
-	rkentry.GlobalAppCtx.RemoveEntry(entry.GetName())
+	rkentry.GlobalAppCtx.RemoveEntry(entry)
 
 	// with options
 	serverConf := rest.RestConf{
 		Host: "0.0.0.0",
 		Port: int(entry.Port),
 	}
-	serverConf.Name = entry.EntryName
+	serverConf.Name = entry.entryName
 	// disable log
 	serverConf.Log.Mode = "console"
 	serverConf.Log.Level = "severe"
 	serverConf.Telemetry.Sampler = 0
 
+	// with options
+	commonServiceEntry := rkentry.RegisterCommonServiceEntry(&rkentry.BootCommonService{
+		Enabled: true,
+	})
+	staticEntry := rkentry.RegisterStaticFileHandlerEntry(&rkentry.BootStaticFileHandler{
+		Enabled: true,
+	})
+	certEntry := rkentry.RegisterCertEntry(&rkentry.BootCert{
+		Cert: []*rkentry.BootCertE{
+			{
+				Name: "ut-cert",
+			},
+		},
+	})
+	swEntry := rkentry.RegisterSWEntry(&rkentry.BootSW{
+		Enabled: true,
+	})
+	promEntry := rkentry.RegisterPromEntry(&rkentry.BootProm{
+		Enabled: true,
+	})
+
 	entry = RegisterZeroEntry(
-		WithZapLoggerEntry(nil),
-		WithEventLoggerEntry(nil),
-		WithCommonServiceEntry(rkentry.RegisterCommonServiceEntry()),
-		WithTvEntry(rkentry.RegisterTvEntry()),
-		WithSwEntry(rkentry.RegisterSwEntry()),
+		WithLoggerEntry(nil),
+		WithEventEntry(nil),
+		WithCommonServiceEntry(commonServiceEntry),
+		WithStaticFileHandlerEntry(staticEntry),
+		WithSwEntry(swEntry),
+		WithPromEntry(promEntry),
+		WithCertEntry(certEntry[0]),
 		WithPort(8083),
 		WithName("ut-entry"),
 		WithDescription("ut-desc"),
-		WithPromEntry(rkentry.RegisterPromEntry()),
 		WithServerConf(&serverConf),
 		WithServerRunOption(rest.WithCors()))
 
@@ -150,7 +168,8 @@ func TestRegisterZeroEntry(t *testing.T) {
 	assert.True(t, entry.IsSwEnabled())
 	assert.True(t, entry.IsPromEnabled())
 	assert.True(t, entry.IsCommonServiceEnabled())
-	assert.True(t, entry.IsTvEnabled())
+	assert.False(t, entry.IsDocsEnabled())
+	assert.True(t, entry.IsStaticFileHandlerEnabled())
 	assert.False(t, entry.IsTlsEnabled())
 	assert.NotNil(t, entry.ServerConf)
 	assert.NotEmpty(t, entry.ServerRunOption)
@@ -161,18 +180,51 @@ func TestRegisterZeroEntry(t *testing.T) {
 	assert.Nil(t, entry.UnmarshalJSON([]byte{}))
 }
 
-func TestEchoEntry_AddInterceptor(t *testing.T) {
+func TestZeroEntry_AddMiddleware(t *testing.T) {
 	defer assertNotPanic(t)
 	entry := RegisterZeroEntry()
-	inter := rkzerometa.Interceptor()
-	entry.AddInterceptor(inter)
+	inter := rkzerometa.Middleware()
+	entry.AddMiddleware(inter)
 }
 
-func TestEchoEntry_Bootstrap(t *testing.T) {
+func TestZeroEntry_Bootstrap(t *testing.T) {
 	defer assertNotPanic(t)
 
+	// with options
+	commonServiceEntry := rkentry.RegisterCommonServiceEntry(&rkentry.BootCommonService{
+		Enabled: true,
+	})
+	staticEntry := rkentry.RegisterStaticFileHandlerEntry(&rkentry.BootStaticFileHandler{
+		Enabled: true,
+	})
+	certEntry := rkentry.RegisterCertEntry(&rkentry.BootCert{
+		Cert: []*rkentry.BootCertE{
+			{
+				Name: "ut-cert",
+			},
+		},
+	})
+	swEntry := rkentry.RegisterSWEntry(&rkentry.BootSW{
+		Enabled: true,
+	})
+	promEntry := rkentry.RegisterPromEntry(&rkentry.BootProm{
+		Enabled: true,
+	})
+
 	// without enable sw, static, prom, common, tv, tls
-	entry := RegisterZeroEntry(WithPort(8080))
+	entry := RegisterZeroEntry(
+		WithLoggerEntry(nil),
+		WithEventEntry(nil),
+		WithCommonServiceEntry(commonServiceEntry),
+		WithStaticFileHandlerEntry(staticEntry),
+		WithSwEntry(swEntry),
+		WithPromEntry(promEntry),
+		WithCertEntry(certEntry[0]),
+		WithPort(8080),
+		WithName("ut-entry"),
+		WithDescription("ut-desc"),
+		WithServerRunOption(rest.WithCors()))
+
 	go entry.Bootstrap(context.Background())
 	time.Sleep(time.Second)
 	validateServerIsUp(t, 8080, entry.IsTlsEnabled())
@@ -183,11 +235,7 @@ func TestEchoEntry_Bootstrap(t *testing.T) {
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 
 	entry = RegisterZeroEntry(
-		WithPort(8081),
-		WithCommonServiceEntry(rkentry.RegisterCommonServiceEntry()),
-		WithTvEntry(rkentry.RegisterTvEntry()),
-		WithSwEntry(rkentry.RegisterSwEntry()),
-		WithPromEntry(rkentry.RegisterPromEntry()))
+		WithPort(8081))
 	go entry.Bootstrap(context.Background())
 	time.Sleep(time.Second)
 	entry.Interrupt(context.TODO())
@@ -195,13 +243,10 @@ func TestEchoEntry_Bootstrap(t *testing.T) {
 	syscall.Kill(syscall.Getpid(), syscall.SIGTERM)
 }
 
-func TestRegisterZeroEntriesWithConfig(t *testing.T) {
+func TestRegisterZeroEntryYAML(t *testing.T) {
 	defer assertNotPanic(t)
 
-	// write config file in unit test temp directory
-	tempDir := path.Join(t.TempDir(), "boot.yaml")
-	assert.Nil(t, ioutil.WriteFile(tempDir, []byte(defaultBootConfigStr), os.ModePerm))
-	entries := RegisterZeroEntriesWithConfig(tempDir)
+	entries := RegisterZeroEntryYAML([]byte(defaultBootConfigStr))
 	assert.NotNil(t, entries)
 	assert.Len(t, entries, 2)
 
