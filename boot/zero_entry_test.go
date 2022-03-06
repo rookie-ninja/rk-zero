@@ -14,7 +14,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"github.com/rookie-ninja/rk-entry/v2/entry"
-	"github.com/rookie-ninja/rk-zero/v2/middleware/meta"
+	"github.com/rookie-ninja/rk-zero/middleware/meta"
 	"github.com/stretchr/testify/assert"
 	"github.com/zeromicro/go-zero/rest"
 	"math/big"

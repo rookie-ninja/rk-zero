@@ -10,7 +10,7 @@ import (
 	"context"
 	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/rookie-ninja/rk-entry/v2/middleware/secure"
-	"github.com/rookie-ninja/rk-zero/v2/middleware"
+	"github.com/rookie-ninja/rk-zero/middleware"
 	"github.com/zeromicro/go-zero/rest"
 	"net/http"
 )

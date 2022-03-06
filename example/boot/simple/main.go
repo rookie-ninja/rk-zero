@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/rookie-ninja/rk-entry/v2/entry"
-	"github.com/rookie-ninja/rk-zero/v2/boot"
+	"github.com/rookie-ninja/rk-zero/boot"
 	"github.com/zeromicro/go-zero/rest"
 	"net/http"
 )

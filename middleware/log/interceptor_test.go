@@ -9,7 +9,7 @@ import (
 	rkentry "github.com/rookie-ninja/rk-entry/v2/entry"
 	"github.com/rookie-ninja/rk-entry/v2/middleware/log"
 	"github.com/rookie-ninja/rk-query"
-	"github.com/rookie-ninja/rk-zero/v2/middleware/context"
+	"github.com/rookie-ninja/rk-zero/middleware/context"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"net/http"

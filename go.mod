@@ -1,4 +1,4 @@
-module github.com/rookie-ninja/rk-zero/v2
+module github.com/rookie-ninja/rk-zero
 
 go 1.17
 
