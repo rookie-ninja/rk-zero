@@ -809,6 +809,35 @@ zero:
 #        maxAge: 0                                         # Optional, default: 0
 ```
 
+## Notice of V2
+Master branch of this package is under upgrade which will be released to v2.x.x soon.
+
+Major changes listed bellow. This will be updated with every commit.
+
+| Last version | New version | Changes                                                                                                            |
+|--------------|-------------|--------------------------------------------------------------------------------------------------------------------|
+| v0.0.11      | v2          | TV is not supported because of LICENSE issue, new TV web UI will be released soon                                  |
+| v0.0.11      | v2          | Remote repositry of ConfigEntry and CertEntry removed                                                              |
+| v0.0.11      | v2          | Swagger json file and boot.yaml file could be embed into embed.FS and pass to rkentry                              |
+| v0.0.11      | v2          | ZapLoggerEntry -> LoggerEntry                                                                                      |
+| v0.0.11      | v2          | EventLoggerEntry -> EventEntry                                                                                     |
+| v0.0.11      | v2          | LoggerEntry can be used as zap.Logger since all functions are inherited                                            |
+| v0.0.11      | v2          | PromEntry can be used as prometheus.Registry since all functions are inherited                                     |
+| v0.0.11      | v2          | rk-common dependency was removed                                                                                   |
+| v0.0.11      | v2          | Entries are organized by EntryType instead of EntryName, so user can have same entry name with different EntryType |
+| v0.0.11      | v2          | zero.middlewares -> gin.middleware in boot.yaml                                                                    |
+| v0.0.11      | v2          | zero.middlewares.loggingZap -> zero.middleware.logging in boot.yaml                                                |
+| v0.0.11      | v2          | zero.middlewares.metricsProm -> zero.middleware.prom in boot.yaml                                                  |
+| v0.0.11      | v2          | zero.middlewares.tracingTelemetry -> zero.middleware.trace in boot.yaml                                            |
+| v0.0.11      | v2          | All middlewares are now support zero.middleware.xxx.ignorePrefix options in boot.yaml                              |
+| v0.0.11      | v2          | Middlewares support zero.middleware.ignorePrefix in boot.yaml as global scope                                      |
+| v0.0.11      | v2          | LoggerEntry, EventEntry, ConfigEntry, CertEntry now support locale to distinguish in differerent environment       |
+| v0.0.11      | v2          | LoggerEntry, EventEntry, CertEntry can be referenced to gin entry in boot.yaml                                     |
+| v0.0.11      | v2          | Healthy API was replaced by Ready and Alive which also provides validation func from user                          |
+| v0.0.11      | v2          | DocsEntry was added into rk-entry                                                                                  |
+| v0.0.11      | v2          | rk-entry support utility functions of embed.FS                                                                     |
+| v0.0.11      | v2          | rk-entry bumped up to v2                                                                                           |
+
 ## Development Status: Stable
 
 ## Build instruction
