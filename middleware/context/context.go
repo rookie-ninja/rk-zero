@@ -9,6 +9,7 @@ package rkzeroctx
 import (
 	"context"
 	"github.com/golang-jwt/jwt/v4"
+	rkcursor "github.com/rookie-ninja/rk-entry/v2/cursor"
 	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/rookie-ninja/rk-logger"
 	"github.com/rookie-ninja/rk-query"
@@ -48,6 +49,14 @@ func SetHeaderToClient(w http.ResponseWriter, key, value string) {
 	}
 	header := w.Header()
 	header.Set(key, value)
+}
+
+// GetCursor create rkcursor.Cursor instance
+func GetCursor(req *http.Request, w http.ResponseWriter) *rkcursor.Cursor {
+	return rkcursor.NewCursor(
+		rkcursor.WithLogger(GetLogger(req, w)),
+		rkcursor.WithEvent(GetEvent(req)),
+		rkcursor.WithEntryNameAndType(GetEntryName(req), "ZeroEntry"))
 }
 
 // GetEvent extract takes the call-scoped EventData from middleware.
