@@ -41,6 +41,7 @@ import (
 	"github.com/zeromicro/go-zero/rest"
 	"go.uber.org/zap"
 	"net/http"
+	"net/http/pprof"
 	"path"
 	"strconv"
 	"strings"
@@ -73,6 +74,7 @@ type BootZero struct {
 		CommonService rkentry.BootCommonService     `yaml:"commonService" json:"commonService"`
 		Prom          rkentry.BootProm              `yaml:"prom" json:"prom"`
 		Static        rkentry.BootStaticFileHandler `yaml:"static" json:"static"`
+		PProf         rkentry.BootPProf             `yaml:"pprof" json:"pprof"`
 		Middleware    struct {
 			Ignore    []string              `yaml:"ignore" json:"ignore"`
 			Logging   rkmidlog.BootConfig   `yaml:"logging" json:"logging"`
@@ -107,6 +109,7 @@ type ZeroEntry struct {
 	ServerConf         *rest.RestConf                  `json:"-" yaml:"-"`
 	ServerRunOption    []rest.RunOption                `json:"-" yaml:"-"`
 	TlsConfig          *tls.Config                     `json:"-" yaml:"-"`
+	PProfEntry         *rkentry.PProfEntry             `json:"-" yaml:"-"`
 	Middlewares        []rest.Middleware               `json:"-" yaml:"-"`
 	bootstrapLogOnce   sync.Once                       `json:"-" yaml:"-"`
 }
@@ -175,6 +178,9 @@ func RegisterZeroEntryYAML(raw []byte) map[string]rkentry.Entry {
 
 		// Register static file handler
 		staticEntry := rkentry.RegisterStaticFileHandlerEntry(&element.Static, rkentry.WithNameStaticFileHandlerEntry(element.Name))
+
+		// Register pprof entry
+		pprofEntry := rkentry.RegisterPProfEntry(&element.PProf, rkentry.WithNamePProfEntry(element.Name))
 
 		inters := make([]rest.Middleware, 0)
 
@@ -257,6 +263,7 @@ func RegisterZeroEntryYAML(raw []byte) map[string]rkentry.Entry {
 			WithCertEntry(certEntry),
 			WithPromEntry(promEntry),
 			WithDocsEntry(docsEntry),
+			WithPProfEntry(pprofEntry),
 			WithStaticFileHandlerEntry(staticEntry),
 			WithCommonServiceEntry(commonServiceEntry),
 			WithSwEntry(swEntry))
@@ -414,6 +421,70 @@ func (entry *ZeroEntry) Bootstrap(ctx context.Context) {
 		entry.DocsEntry.Bootstrap(ctx)
 	}
 
+	// Is pprof enabled?
+	if entry.IsPProfEnabled() {
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path),
+			Handler: pprof.Index,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path, "cmdline"),
+			Handler: pprof.Cmdline,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path, "profile"),
+			Handler: pprof.Profile,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path, "symbol"),
+			Handler: pprof.Symbol,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodPost,
+			Path:    path.Join(entry.PProfEntry.Path, "symbol"),
+			Handler: pprof.Symbol,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path, "trace"),
+			Handler: pprof.Trace,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path, "allocs"),
+			Handler: pprof.Handler("allocs").ServeHTTP,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path, "block"),
+			Handler: pprof.Handler("block").ServeHTTP,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path, "goroutine"),
+			Handler: pprof.Handler("goroutine").ServeHTTP,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path, "heap"),
+			Handler: pprof.Handler("heap").ServeHTTP,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path, "mutex"),
+			Handler: pprof.Handler("mutex").ServeHTTP,
+		})
+		entry.Server.AddRoute(rest.Route{
+			Method:  http.MethodGet,
+			Path:    path.Join(entry.PProfEntry.Path, "threadcreate"),
+			Handler: pprof.Handler("threadcreate").ServeHTTP,
+		})
+	}
+
 	// Is Static enabled?
 	if entry.IsStaticFileHandlerEnabled() {
 		// Bootstrap Docs entry.
@@ -465,6 +536,9 @@ func (entry *ZeroEntry) Bootstrap(ctx context.Context) {
 
 			entry.LoggerEntry.Info(fmt.Sprintf("CommonSreviceEntry: %s", strings.Join(handlers, ", ")))
 		}
+		if entry.IsPProfEnabled() {
+			entry.LoggerEntry.Info(fmt.Sprintf("PProfEntry: %s://localhost:%d%s", scheme, entry.Port, entry.PProfEntry.Path))
+		}
 		entry.EventEntry.Finish(event)
 	})
 }
@@ -491,6 +565,10 @@ func (entry *ZeroEntry) Interrupt(ctx context.Context) {
 
 	if entry.IsStaticFileHandlerEnabled() {
 		entry.StaticFileEntry.Interrupt(ctx)
+	}
+
+	if entry.IsPProfEnabled() {
+		entry.PProfEntry.Interrupt(ctx)
 	}
 
 	if entry.Server != nil {
@@ -535,6 +613,7 @@ func (entry *ZeroEntry) MarshalJSON() ([]byte, error) {
 		"commonServiceEntry":     entry.CommonServiceEntry,
 		"promEntry":              entry.PromEntry,
 		"staticFileHandlerEntry": entry.StaticFileEntry,
+		"pprofEntry":             entry.PProfEntry,
 	}
 
 	if entry.CertEntry != nil {
@@ -596,6 +675,11 @@ func (entry *ZeroEntry) IsStaticFileHandlerEnabled() bool {
 	return entry.StaticFileEntry != nil
 }
 
+// IsPProfEnabled Is pprof entry enabled?
+func (entry *ZeroEntry) IsPProfEnabled() bool {
+	return entry.PProfEntry != nil
+}
+
 // IsPromEnabled Is prometheus entry enabled?
 func (entry *ZeroEntry) IsPromEnabled() bool {
 	return entry.PromEntry != nil
@@ -639,7 +723,14 @@ func (entry *ZeroEntry) logBasicInfo(operation string, ctx context.Context) (rkq
 			zap.Bool("commonServiceEnabled", true))
 	}
 
-	// add TvEntry info
+	// add PProfEntry info
+	if entry.IsPProfEnabled() {
+		event.AddPayloads(
+			zap.Bool("pprofEnabled", true),
+			zap.String("pprofPath", entry.PProfEntry.Path))
+	}
+
+	// add DocsEntry info
 	if entry.IsDocsEnabled() {
 		event.AddPayloads(
 			zap.Bool("docsEnabled", true),
@@ -731,6 +822,13 @@ func WithSwEntry(sw *rkentry.SWEntry) ZeroEntryOption {
 func WithCommonServiceEntry(commonServiceEntry *rkentry.CommonServiceEntry) ZeroEntryOption {
 	return func(entry *ZeroEntry) {
 		entry.CommonServiceEntry = commonServiceEntry
+	}
+}
+
+// WithPProfEntry provide rkentry.PProfEntry.
+func WithPProfEntry(p *rkentry.PProfEntry) ZeroEntryOption {
+	return func(entry *ZeroEntry) {
+		entry.PProfEntry = p
 	}
 }
 
