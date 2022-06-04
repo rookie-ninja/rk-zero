@@ -30,8 +30,8 @@ func Middleware(opts ...rkmidpanic.Option) rest.Middleware {
 			ctx := context.WithValue(req.Context(), rkmid.EntryNameKey, set.GetEntryName())
 			req = req.WithContext(ctx)
 
-			handlerFunc := func(resp *rkerror.ErrorResp) {
-				httpx.WriteJson(writer, resp.Err.Code, resp)
+			handlerFunc := func(resp rkerror.ErrorInterface) {
+				httpx.WriteJson(writer, resp.Code(), resp)
 			}
 			beforeCtx := set.BeforeCtx(rkzeroctx.GetEvent(req), rkzeroctx.GetLogger(req, writer), handlerFunc)
 			set.Before(beforeCtx)

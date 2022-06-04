@@ -21,7 +21,8 @@ var boot []byte
 
 func main() {
 	// Bootstrap preload entries
-	rkentry.BootstrapPreloadEntryYAML(boot)
+	rkentry.BootstrapBuiltInEntryFromYAML(boot)
+	rkentry.BootstrapPluginEntryFromYAML(boot)
 
 	// Bootstrap zero entry from boot config
 	res := rkzero.RegisterZeroEntryYAML(boot)

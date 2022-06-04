@@ -17,7 +17,7 @@ import (
 	"net/http"
 )
 
-// Middleware create a interceptor with opentelemetry.
+// Middleware create a middleware with opentelemetry.
 func Middleware(opts ...rkmidtrace.Option) rest.Middleware {
 	set := rkmidtrace.NewOptionSet(opts...)
 

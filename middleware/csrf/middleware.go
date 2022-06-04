@@ -35,7 +35,7 @@ func Middleware(opts ...rkmidcsrf.Option) rest.Middleware {
 			set.Before(beforeCtx)
 
 			if beforeCtx.Output.ErrResp != nil {
-				httpx.WriteJson(writer, beforeCtx.Output.ErrResp.Err.Code, beforeCtx.Output.ErrResp)
+				httpx.WriteJson(writer, beforeCtx.Output.ErrResp.Code(), beforeCtx.Output.ErrResp)
 				return
 			}
 

@@ -40,7 +40,7 @@ func Middleware(opts ...rkmidauth.Option) rest.Middleware {
 				for k, v := range beforeCtx.Output.HeadersToReturn {
 					writer.Header().Set(k, v)
 				}
-				httpx.WriteJson(writer, beforeCtx.Output.ErrResp.Err.Code, beforeCtx.Output.ErrResp)
+				httpx.WriteJson(writer, beforeCtx.Output.ErrResp.Code(), beforeCtx.Output.ErrResp)
 				return
 			}
 

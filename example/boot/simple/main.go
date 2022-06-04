@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"embed"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -18,21 +19,24 @@ import (
 //go:embed boot.yaml
 var boot []byte
 
-////go:embed docs
-//var docsFS embed.FS
-//
-////go:embed docs
-//var staticFS embed.FS
+//go:embed docs
+var docsFS embed.FS
+
+//go:embed docs
+var staticFS embed.FS
 
 func init() {
-	//rkentry.GlobalAppCtx.AddEmbedFS(rkentry.DocsEntryType, "greeter", &docsFS)
-	//rkentry.GlobalAppCtx.AddEmbedFS(rkentry.SWEntryType, "greeter", &docsFS)
-	//rkentry.GlobalAppCtx.AddEmbedFS(rkentry.StaticFileHandlerEntryType, "greeter", &staticFS)
+	rkentry.GlobalAppCtx.AddEmbedFS(rkentry.DocsEntryType, "greeter", &docsFS)
+	rkentry.GlobalAppCtx.AddEmbedFS(rkentry.SWEntryType, "greeter", &docsFS)
 }
 
+// @title RK Swagger for Zero
+// @version 1.0
+// @description This is a greeter service with rk-boot.
 func main() {
 	// Bootstrap preload entries
-	rkentry.BootstrapPreloadEntryYAML(boot)
+	rkentry.BootstrapBuiltInEntryFromYAML(boot)
+	rkentry.BootstrapPluginEntryFromYAML(boot)
 
 	// Bootstrap zero entry from boot config
 	res := rkzero.RegisterZeroEntryYAML(boot)
@@ -56,6 +60,14 @@ func main() {
 	zeroEntry.Interrupt(context.Background())
 }
 
+// Greeter handler
+// @Summary Greeter service
+// @Id 1
+// @version 1.0
+// @produce application/json
+// @Param name query string true "Input name"
+// @Success 200 {object} GreeterResponse
+// @Router /v1/greeter [get]
 func Greeter(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
 	resp := &GreeterResponse{

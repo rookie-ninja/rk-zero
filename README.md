@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/rookie-ninja/rk-zero)](https://goreportcard.com/report/github.com/rookie-ninja/rk-zero)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Middleware & bootstrapper designed for [zeromicro/go-zero](https://github.com/zeromicro/go-zero) framework. Currently, supports bellow functionalities.
+Middleware & bootstrapper designed for [zeromicro/go-zero](https://github.com/zeromicro/go-zero) framework.  [Documentation](https://docs.rkdev.info/docs/rk-boot/getting-started/zero/).
 
 This belongs to [rk-boot](https://github.com/rookie-ninja/rk-boot) family. 
 
@@ -603,6 +603,7 @@ The supported scheme of **tokenLookup**
 #  - name: my-logger                                       # Required
 #    description: "Description of entry"                   # Optional
 #    domain: "*"                                           # Optional, default: "*"
+#    default: false                                        # Optional, default: false, use as default logger entry
 #    zap:                                                  # Optional
 #      level: info                                         # Optional, default: info
 #      development: true                                   # Optional, default: true
@@ -648,6 +649,7 @@ The supported scheme of **tokenLookup**
 #  - name: my-event                                        # Required
 #    description: "Description of entry"                   # Optional
 #    domain: "*"                                           # Optional, default: "*"
+#    default: false                                        # Optional, default: false, use as default event entry
 #    encoding: console                                     # Optional, default: console
 #    outputPaths: ["stdout"]                               # Optional, default: [stdout]
 #    lumberjack:                                           # Optional, default: nil
@@ -727,6 +729,7 @@ zero:
 #        certEntry: my-cert                                # Optional, default: "", reference of cert entry declared above
 #    middleware:
 #      ignore: [""]                                        # Optional, default: []
+#      errorModel: google                                  # Optional, default: google, [amazon, google] are supported options
 #      logging:
 #        enabled: true                                     # Optional, default: false
 #        ignore: [""]                                      # Optional, default: []
@@ -777,6 +780,7 @@ zero:
 #        enabled: true                                     # Optional, default: false
 #        ignore: [ "" ]                                    # Optional, default: []
 #        signerEntry: ""                                   # Optional, default: ""
+#        skipVerify: false                                 # Optional, default: false
 #        symmetric:                                        # Optional
 #          algorithm: ""                                   # Required, default: ""
 #          token: ""                                       # Optional, default: ""
@@ -865,7 +869,7 @@ Run unit-test, golangci-lint, doctoc and gofmt.
 ## Test instruction
 Run unit test with **make test** command.
 
-github workflow will automatically run unit test and golangci-lint for testing and lint validation.
+Github workflow will automatically run unit test and golangci-lint for testing and lint validation.
 
 ## Contributing
 We encourage and support an active, healthy community of contributors &mdash;

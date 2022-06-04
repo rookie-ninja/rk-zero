@@ -16,7 +16,7 @@ import (
 	"net/http"
 )
 
-// Interceptor will add common headers as extension style in http response.
+// Middleware will add common headers as extension style in http response.
 func Middleware(opts ...rkmidmeta.Option) rest.Middleware {
 	set := rkmidmeta.NewOptionSet(opts...)
 
