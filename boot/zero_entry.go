@@ -29,7 +29,7 @@ import (
 	"github.com/rookie-ninja/rk-entry/v2/middleware/tracing"
 	"github.com/rookie-ninja/rk-query"
 	"github.com/rookie-ninja/rk-zero/middleware/auth"
-	"github.com/rookie-ninja/rk-zero/middleware/cors"
+	rkzerocors "github.com/rookie-ninja/rk-zero/middleware/cors"
 	"github.com/rookie-ninja/rk-zero/middleware/csrf"
 	"github.com/rookie-ninja/rk-zero/middleware/jwt"
 	"github.com/rookie-ninja/rk-zero/middleware/log"
@@ -222,6 +222,12 @@ func RegisterZeroEntryYAML(raw []byte) map[string]rkentry.Entry {
 				rkmidtrace.ToOptions(&element.Middleware.Trace, element.Name, ZeroEntryType)...))
 		}
 
+		// cors middleware
+		if element.Middleware.Cors.Enabled {
+			inters = append(inters, rkzerocors.Middleware(
+				rkmidcors.ToOptions(&element.Middleware.Cors, element.Name, ZeroEntryType)...))
+		}
+
 		// jwt middleware
 		if element.Middleware.Jwt.Enabled {
 			inters = append(inters, rkzerojwt.Middleware(
@@ -238,12 +244,6 @@ func RegisterZeroEntryYAML(raw []byte) map[string]rkentry.Entry {
 		if element.Middleware.Csrf.Enabled {
 			inters = append(inters, rkzerocsrf.Middleware(
 				rkmidcsrf.ToOptions(&element.Middleware.Csrf, element.Name, ZeroEntryType)...))
-		}
-
-		// cors middleware
-		if element.Middleware.Cors.Enabled {
-			inters = append(inters, rkzerocors.Middleware(
-				rkmidcors.ToOptions(&element.Middleware.Cors, element.Name, ZeroEntryType)...))
 		}
 
 		// meta middleware
