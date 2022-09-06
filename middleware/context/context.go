@@ -95,6 +95,13 @@ func GetLogger(req *http.Request, w http.ResponseWriter) *zap.Logger {
 	return rklogger.NoopLogger
 }
 
+func GormCtx(req *http.Request, w http.ResponseWriter) context.Context {
+	res := context.Background()
+	res = context.WithValue(res, rkmid.LoggerKey.String(), GetLogger(req, w))
+	res = context.WithValue(res, rkmid.EventKey.String(), GetEvent(req))
+	return res
+}
+
 // GetRequestId extract request id from context.
 // If user enabled meta interceptor, then a random request Id would e assigned and set to context as value.
 // If user called AddHeaderToClient() with key of RequestIdKey, then a new request id would be updated.
