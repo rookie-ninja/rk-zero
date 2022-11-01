@@ -43,7 +43,7 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"net/http/pprof"
-	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -118,7 +118,7 @@ type ZeroEntry struct {
 
 // RegisterZeroEntryYAML register zero entries with provided config file (Must YAML file).
 //
-// Currently, support two ways to provide config file path.
+// Currently, support two ways to provide config file filepath.
 // 1: With function parameters
 // 2: With command line flag "--rkboot" described in rkcommon.BootConfigPathFlagKey (Will override function parameter if exists)
 // Command line flag has high priority which would override function parameter
@@ -357,13 +357,13 @@ func (entry *ZeroEntry) Bootstrap(ctx context.Context) {
 		// for sw/
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.SwEntry.Path),
+			Path:    filepath.Join(entry.SwEntry.Path),
 			Handler: entry.SwEntry.ConfigFileHandler(),
 		})
 		// for sw/*
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.SwEntry.Path, ":*"),
+			Path:    filepath.Join(entry.SwEntry.Path, ":*"),
 			Handler: entry.SwEntry.ConfigFileHandler(),
 		})
 
@@ -419,12 +419,12 @@ func (entry *ZeroEntry) Bootstrap(ctx context.Context) {
 		// Bootstrap Docs entry.
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.DocsEntry.Path),
+			Path:    filepath.Join(entry.DocsEntry.Path),
 			Handler: entry.DocsEntry.ConfigFileHandler(),
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.DocsEntry.Path, ":*"),
+			Path:    filepath.Join(entry.DocsEntry.Path, ":*"),
 			Handler: entry.DocsEntry.ConfigFileHandler(),
 		})
 
@@ -435,62 +435,62 @@ func (entry *ZeroEntry) Bootstrap(ctx context.Context) {
 	if entry.IsPProfEnabled() {
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path),
+			Path:    filepath.Join(entry.PProfEntry.Path),
 			Handler: pprof.Index,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path, "cmdline"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "cmdline"),
 			Handler: pprof.Cmdline,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path, "profile"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "profile"),
 			Handler: pprof.Profile,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path, "symbol"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "symbol"),
 			Handler: pprof.Symbol,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodPost,
-			Path:    path.Join(entry.PProfEntry.Path, "symbol"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "symbol"),
 			Handler: pprof.Symbol,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path, "trace"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "trace"),
 			Handler: pprof.Trace,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path, "allocs"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "allocs"),
 			Handler: pprof.Handler("allocs").ServeHTTP,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path, "block"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "block"),
 			Handler: pprof.Handler("block").ServeHTTP,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path, "goroutine"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "goroutine"),
 			Handler: pprof.Handler("goroutine").ServeHTTP,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path, "heap"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "heap"),
 			Handler: pprof.Handler("heap").ServeHTTP,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path, "mutex"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "mutex"),
 			Handler: pprof.Handler("mutex").ServeHTTP,
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.PProfEntry.Path, "threadcreate"),
+			Path:    filepath.Join(entry.PProfEntry.Path, "threadcreate"),
 			Handler: pprof.Handler("threadcreate").ServeHTTP,
 		})
 	}
@@ -500,12 +500,12 @@ func (entry *ZeroEntry) Bootstrap(ctx context.Context) {
 		// Bootstrap Docs entry.
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.StaticFileEntry.Path),
+			Path:    filepath.Join(entry.StaticFileEntry.Path),
 			Handler: entry.StaticFileEntry.GetFileHandler(),
 		})
 		entry.Server.AddRoute(rest.Route{
 			Method:  http.MethodGet,
-			Path:    path.Join(entry.StaticFileEntry.Path, ":*"),
+			Path:    filepath.Join(entry.StaticFileEntry.Path, ":*"),
 			Handler: entry.StaticFileEntry.GetFileHandler(),
 		})
 
