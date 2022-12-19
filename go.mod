@@ -5,8 +5,8 @@ go 1.18
 require (
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/prometheus/client_golang v1.13.0
-	github.com/rookie-ninja/rk-entry/v2 v2.2.13
-	github.com/rookie-ninja/rk-logger v1.2.12
+	github.com/rookie-ninja/rk-entry/v2 v2.2.14
+	github.com/rookie-ninja/rk-logger v1.2.13
 	github.com/rookie-ninja/rk-query v1.2.14
 	github.com/streadway/handy v0.0.0-20200128134331-0f66f006fb2e
 	github.com/stretchr/testify v1.8.0
