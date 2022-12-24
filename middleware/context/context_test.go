@@ -7,6 +7,7 @@ package rkzeroctx
 
 import (
 	"context"
+	rkcursor "github.com/rookie-ninja/rk-entry/v2/cursor"
 	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/rookie-ninja/rk-logger"
 	"github.com/rookie-ninja/rk-query"
@@ -204,6 +205,27 @@ func TestEndTraceSpan(t *testing.T) {
 	// With failure
 	span = GetTraceSpan(req)
 	EndTraceSpan(span, false)
+}
+
+func createFakePointer(p *rkcursor.CursorPayload) rkcursor.Pointer {
+	return &fakePointer{}
+}
+
+type fakePointer struct{}
+
+func (f fakePointer) PrintError(err error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f fakePointer) ObserveError(err error) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (f fakePointer) Release() {
+	//TODO implement me
+	panic("implement me")
 }
 
 func assertNotPanic(t *testing.T) {
